@@ -49,6 +49,9 @@ namespace argos {
       Real                         m_fDistanceNoiseStdDev;
       CRandom::CRNG*               m_pcRNG;
       CSpace&                      m_cSpace;
+      Real m_fDistanceBias;
+      Real m_fDistanceBiasMean;
+      Real m_fDistanceBiasStdDev;
       bool                         m_bShowRays;
    };
 
