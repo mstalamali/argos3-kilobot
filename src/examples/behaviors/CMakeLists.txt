@@ -75,6 +75,12 @@ if(ARGOS_BUILD_FOR_SIMULATOR)
   target_link_libraries(forager argos3plugin_simulator_kilolib)
 
   #
+  # ARK loop function: BestN
+  #
+  add_executable(bestN bestN.c)  
+  target_link_libraries(bestN argos3plugin_simulator_kilolib)
+
+  #
   # ARK loop function: clustering
   #
   add_executable(clustering clustering.c)  
