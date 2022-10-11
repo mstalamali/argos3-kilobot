@@ -1,6 +1,6 @@
 # If Qt+OpenGL dependencies were found, descend into these directories
-if(ARGOS_COMPILE_QTOPENGL)
+if(ARGOS_QTOPENGL_FOUND)
   	add_subdirectory(demoC)
   	add_subdirectory(clustering)
     add_subdirectory(BestN)
-endif(ARGOS_COMPILE_QTOPENGL)
+endif(ARGOS_QTOPENGL_FOUND)

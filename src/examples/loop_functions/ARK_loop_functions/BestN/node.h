@@ -1,3 +1,8 @@
+/**
+ * @file <node.h>
+ *
+ * @author Fabio Oddi <fabio.oddi@uniroma1.it>
+ */
 #ifndef NODE_H
 #define NODE_H
 #include <string>

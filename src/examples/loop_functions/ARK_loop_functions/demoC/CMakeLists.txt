@@ -13,11 +13,11 @@ target_link_libraries(ALF_demoC_loop_function
 
 
 
-if(ARGOS_COMPILE_QTOPENGL)
+if(ARGOS_QTOPENGL_FOUND)
 add_library(ALF_qt_user_functions MODULE ALF_qt_user_functions.h
 ALF_qt_user_functions.cpp)
-endif(ARGOS_COMPILE_QTOPENGL)
+endif(ARGOS_QTOPENGL_FOUND)
 
-if(ARGOS_COMPILE_QTOPENGL)
+if(ARGOS_QTOPENGL_FOUND)
   target_link_libraries(ALF_demoC_loop_function argos3plugin_simulator_qtopengl)
-endif(ARGOS_COMPILE_QTOPENGL)
+endif(ARGOS_QTOPENGL_FOUND)

@@ -1,3 +1,9 @@
+/**
+ * @file <filter.h>
+ *
+ * @author Fabio Oddi <fabio.oddi@uniroma1.it>
+ */
+
 #ifndef FILTER_H
 #define FILTER_H
 

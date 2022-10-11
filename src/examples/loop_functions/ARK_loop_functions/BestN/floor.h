@@ -1,3 +1,9 @@
+/**
+ * @file <floor.h>
+ *
+ * @author Fabio Oddi <fabio.oddi@uniroma1.it>
+ */
+
 #ifndef HIERARCHICFLOOR_H
 #define HIERARCHICFLOOR_H
 #include "node.h"

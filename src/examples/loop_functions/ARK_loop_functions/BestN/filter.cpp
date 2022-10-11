@@ -1,3 +1,5 @@
+// @author Fabio Oddi <fabio.oddi@uniroma1.it>
+
 #include "filter.h"
 
 Filter::Filter(){}

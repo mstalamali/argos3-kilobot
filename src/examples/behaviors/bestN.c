@@ -1,5 +1,5 @@
 /* Kilobot control software for the simple ALF experment : clustering
- * author: Mohamed Salaheddine Talamali (University of Sheffield) mstalamali1@sheffield.ac.uk
+ * author: Fabio Oddi (Università la Sapienza di Roma) fabio.oddi@uniroma1.it
  */
 
 #include "kilolib.h"

@@ -1,13 +1,12 @@
 /**
  * @file <BestN_ALF.h>
  *
- * @brief This is the header file of ALF, the ARK (Augmented Reality for Kilobots) loop function. Here, we present a simple experiment
- * in which the robots move randomly in search for a special area. When a robot finds the area, ALF signals him, and he stops moving.
+ * @brief This is the header file of ALF, the ARK (Augmented Reality for Kilobots) loop function.
  *
  * @cite Reina, A., Cope, A. J., Nikolaidis, E., Marshall, J. A. R., & Sabo, C. (2017). ARK: Augmented Reality for Kilobots.
  * IEEE Robotics and Automation Letters, 2(3), 1755–1761. https://doi.org/10.1109/LRA.2017.2700059
  *
- * @author Mohamed Salaheddine Talamali <mstalamali1@sheffield.ac.uk>
+ * @author Fabio Oddi <fabio.oddi@uniroma1.it>
  */
 
 
