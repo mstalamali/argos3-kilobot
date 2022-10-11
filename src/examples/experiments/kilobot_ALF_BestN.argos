@@ -16,7 +16,7 @@
     <!-- *************** -->
     <controllers>
         
-        <kilobot_controller id="clustering">
+        <kilobot_controller id="bestN">
             <actuators>
                 <differential_steering implementation="default"
                 bias_avg="0.000015"
@@ -89,7 +89,7 @@
             <orientation method="uniform" min="0,0,0" max="360,0,0" />
             <entity quantity="100" max_trials="200">
                 <kilobot id="kb">
-                    <controller config="clustering"/> <dynamics2d friction="0.7" />
+                    <controller config="bestN"/> <dynamics2d friction="0.7" />
                 </kilobot>
             </entity>
         </distribute>  
