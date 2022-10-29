@@ -3,8 +3,6 @@ include_directories(argos3/plugins/robot/kilobot/control_interface argos3/plugin
 add_library(ALF_BestN_loop_function MODULE
   BestN_ALF.h
   BestN_ALF.cpp
-  filter.h
-  filter.cpp
   node.h
   node.cpp
   floor.h

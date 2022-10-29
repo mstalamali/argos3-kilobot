@@ -20,10 +20,8 @@ class hierarchicFloor
         std::vector<Node *> leafs;
         int num_nodes=0;
         int depth=-1;
-        int branches=-1;
+        long unsigned int branches=-1;
         int swarm_size=-1;
-        std::string env="arena";
-        float filter_gain=0.7;
         float max_utility=-1;
         float k=-1;
         float noise=-1;
@@ -31,7 +29,7 @@ class hierarchicFloor
     public:
         hierarchicFloor();
 
-        hierarchicFloor(const std::string Env,const CVector2 Tl,const CVector2 Br,const int SwarmSize,const int Depth,const int Branches,const float Alpha,const float Utility,const float K,const float Noise,const float Offsetx,const float Offset);
+        hierarchicFloor(const CVector2 Tl,const CVector2 Br,const int SwarmSize,const int Depth,const int Branches,const float Utility,const float K,const float Noise,const float Offsetx,const float Offset);
 
         ~hierarchicFloor();
         
@@ -61,9 +59,12 @@ class hierarchicFloor
 
         Node* get_best_leaf();
 
+        float get_kernel_unit();
+
         Node* get_node(const int Id);
 
         Node* get_node(Node *Start_node,const int Id);
 
+        Node* get_leaf_from_position(CVector2 Position);
 };
 #endif

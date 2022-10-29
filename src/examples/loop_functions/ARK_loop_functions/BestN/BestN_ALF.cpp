@@ -57,15 +57,10 @@ void CBestN_ALF::SetupInitialKilobotStates() {
     m_vecKilobotStates.resize(m_tKilobotEntities.size());
     m_vecLastTimeMessaged.resize(m_tKilobotEntities.size());
     m_fMinTimeBetweenTwoMsg = Max<Real>(1.0, m_tKilobotEntities.size() * m_fTimeForAMessage / 3.0);
-    m_vecKilobotMaps.resize(m_tKilobotEntities.size());
 
-    v_floor = new hierarchicFloor("arena",TL,BR,m_tKilobotEntities.size(),depth,branches,0.7,10,k,1,this->GetSpace().GetArenaLimits().GetMax()[0],this->GetSpace().GetArenaLimits().GetMax()[1]);
-    v_floor->complete_tree();
-    v_floor->assign_random_MAXutility();
-    v_floor->set_vertices_and_kernel();
-
+    v_floor = new hierarchicFloor(TL,BR,m_tKilobotEntities.size(),depth,branches,10,k,1,this->GetSpace().GetArenaLimits().GetMax()[0],this->GetSpace().GetArenaLimits().GetMax()[1]);
     for(UInt16 it=0;it< m_tKilobotEntities.size();it++){
-        /* Setup the virtual states of a kilobot(e.g. has food state)*/
+        /* Setup the virtual states of a kilobot */
         SetupInitialKilobotState(*m_tKilobotEntities[it]);
     }
 }
@@ -76,11 +71,8 @@ void CBestN_ALF::SetupInitialKilobotStates() {
 void CBestN_ALF::SetupInitialKilobotState(CKilobotEntity &c_kilobot_entity){
     /* The kilobots begins outside the clustering hub*/
     UInt16 unKilobotID=GetKilobotId(c_kilobot_entity);
+    // SendInitInformation(c_kilobot_entity);
     m_vecKilobotStates[unKilobotID] = QUORUM_NOT_REACHED;
-    m_vecKilobotMaps[unKilobotID] = new hierarchicFloor("agent",TL,BR,m_tKilobotEntities.size(),depth,branches,0.7,10,k,1,this->GetSpace().GetArenaLimits().GetMax()[0],this->GetSpace().GetArenaLimits().GetMax()[1]);
-    m_vecKilobotMaps[unKilobotID]->complete_tree();
-    m_vecKilobotMaps[unKilobotID]->set_vertices();
-    m_vecLastTimeMessaged[unKilobotID] = -1000;
 }
 
 /****************************************/
@@ -118,6 +110,8 @@ void CBestN_ALF::UpdateKilobotState(CKilobotEntity &c_kilobot_entity){
     UInt16 unKilobotID=GetKilobotId(c_kilobot_entity);
     CVector2 cKilobotPosition=GetKilobotPosition(c_kilobot_entity);
     m_vecKilobotStates[unKilobotID]=QUORUM_NOT_REACHED;
+    Node *cKilobotLeaf=v_floor->get_leaf_from_position(cKilobotPosition);
+    // std::cout<<"kiloID:"<<unKilobotID<<", kiloLEAF:"<<cKilobotLeaf->get_id()<<", kernalVAL:"<<cKilobotLeaf->get_kernel_value(cKilobotPosition,v_floor->get_kernel_unit())<<"\n";
 }
 
 /****************************************/
@@ -171,6 +165,18 @@ void CBestN_ALF::UpdateVirtualSensor(CKilobotEntity &c_kilobot_entity){
     else{
         GetSimulator().GetMedium<CKilobotCommunicationMedium>("kilocomm").SendOHCMessageTo(c_kilobot_entity,NULL);
     }
+}
+
+/****************************************/
+/****************************************/
+/* Send dimensions for hierarchic structure and initial goal position*/
+void CBestN_ALF::SendInitInformation(CKilobotEntity &c_kilobot_entity)
+{
+    /* Create ARK-type messages variables */
+    m_tALFKilobotMessage tKilobotMessage,tEmptyMessage,tMessage;
+    /* Get the kilobot ID */
+    UInt16 unKilobotID=GetKilobotId(c_kilobot_entity);
+    tKilobotMessage.m_sID = unKilobotID;
 }
 
 /****************************************/

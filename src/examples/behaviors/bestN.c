@@ -5,7 +5,9 @@
 #include "kilolib.h"
 #include <stdlib.h>
 #include<stdio.h>
-
+#include "tree_structure.h"
+#include "message_structure.h"
+#include "quorum_structure.h"
 
 /* Enum for different motion types */
 typedef enum {
@@ -25,15 +27,26 @@ typedef enum {
 typedef enum {
     QUORUM_NOT_REACHED = 0,
     QUORUM_REACHED = 1,
-} action_t;
+} state_t;
 
-int current_node = 0, previous_node = 0;
+/* Message send to the other kilobots */
+message_t messageA;
+
+/* Flag for decision to send a word */
+bool sending_msg = false;
+
+/*Flag for the existence of information*/
+bool new_information = false;
+
+/* counters for broadcast a message */
+const uint8_t max_broadcast_ticks = 2 * 16; /* n_s*0.5*32 */
+uint32_t last_broadcast_ticks = 0;
 
 /* current motion type */
 motion_t current_motion_type = STOP;
 
 /* current state */
-action_t current_state = QUORUM_NOT_REACHED;
+state_t current_state = QUORUM_NOT_REACHED;
 
 /* counters for motion, turning and random_walk */
 uint32_t last_turn_ticks = 0;
@@ -51,6 +64,10 @@ int sa_type = 3;
 int sa_payload = 0;
 bool new_sa_msg = false;
 
+tree_a *theTree=NULL;
+message_a *messagesList=NULL;
+message_a *inputBuffer=NULL;
+quorum_a *quorumList=NULL;
 /*-------------------------------------------------------------------*/
 /* Function for setting the motor speed                              */
 /*-------------------------------------------------------------------*/
@@ -87,12 +104,22 @@ void set_motion( motion_t new_motion_type ) {
     }
 }
 
-
+/*-------------------------------------------------------------------*/
+/* Parse ARK received messages                                       */
+/*-------------------------------------------------------------------*/
+void parse_smart_arena_message(uint8_t data[9], uint8_t kb_index)
+{
+    // index of first element in the 3 sub-blocks of data
+    uint8_t shift = kb_index * 3;
+    sa_type = data[shift + 1] >> 2 & 0x0F;
+    sa_payload = ((data[shift + 1] & 0b11) << 8) | (data[shift + 2]);
+}
 /*-------------------------------------------------------------------*/
 /* Callback function for message reception                           */
 /*-------------------------------------------------------------------*/
-void rx_message(message_t *msg, distance_measurement_t *d) {
-    if (msg->type == 0) {
+void message_rx(message_t *msg, distance_measurement_t *d) {
+    if (msg->type == 0) //ARK message
+    {
         // unpack message
         int id1 = msg->data[0] << 2 | (msg->data[1] >> 6);
         int id2 = msg->data[3] << 2 | (msg->data[4] >> 6);
@@ -120,6 +147,10 @@ void rx_message(message_t *msg, distance_measurement_t *d) {
         }
 
     }
+    else if(msg->type==1) //KILOBOT message
+    {
+
+    }
     else if (msg->type == 120) {
         int id = (msg->data[0] << 8) | msg->data[1];
         if (id == kilo_uid) {
@@ -145,6 +176,37 @@ void rx_message(message_t *msg, distance_measurement_t *d) {
     }
 }
 
+/*-------------------------------------------------------------------*/
+/* Send current kb status to the swarm                               */
+/*-------------------------------------------------------------------*/
+message_t *message_tx() {
+  if (sending_msg)
+  {
+    /* this one is filled in the loop */
+    return &messageA;
+  }
+  return 0;
+}
+
+/*-------------------------------------------------------------------*/
+/* Callback function for successful transmission                     */
+/*-------------------------------------------------------------------*/
+void message_tx_success() {
+  sending_msg = false;
+}
+
+/*-------------------------------------------------------------------*/
+/* Function to broadcast a message                                        */
+/*-------------------------------------------------------------------*/
+void broadcast()
+{
+
+  if (new_information && !sending_msg && kilo_ticks > last_broadcast_ticks + max_broadcast_ticks)
+  {
+    last_broadcast_ticks = kilo_ticks;
+    sending_msg = true;
+  } 
+}
 
 /*-------------------------------------------------------------------*/
 /* Function implementing the uncorrelated random walk                */
@@ -185,8 +247,6 @@ void random_walk(){
     }
 }
 
-
-
 /*-------------------------------------------------------------------*/
 /* Init function                                                     */
 /*-------------------------------------------------------------------*/
@@ -195,6 +255,14 @@ void setup()
     /* Initialise LED and motors */
     set_color(RGB(0,0,0));
     set_motors(0,0);
+
+    /* TODO implementa messagista per scambio iniziale di parametri
+        poi passa al test di messaggi e quorum*/
+    complete_tree(&theTree,1,4);
+    set_vertices(&theTree,0,0,1,1,.5,.5);
+    /**/
+
+    // printf("node_tl:_%f,%f___br:_%f,%f\n",(*theTree).children[0].tlX,(*theTree).children[0].tlY,(*theTree).children[0].brX,(*theTree).children[0].brY);
 
     /* Initialise random seed */
     uint8_t seed = rand_hard();
@@ -217,8 +285,14 @@ void loop() {
 int main()
 {
     kilo_init();
-    kilo_message_rx = rx_message;
+    // register message reception callback
+    kilo_message_rx = message_rx;
+    // register message transmission callback
+    kilo_message_tx = message_tx;
+    // register tranmsission success callback
+    kilo_message_tx_success = message_tx_success;
     kilo_start(setup, loop);
-
+    
+    // erase_tree(&theTree);
     return 0;
 }

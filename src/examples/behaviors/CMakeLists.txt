@@ -77,7 +77,7 @@ if(ARGOS_BUILD_FOR_SIMULATOR)
   #
   # ARK loop function: BestN
   #
-  add_executable(bestN bestN.c)  
+  add_executable(bestN message_structure.h quorum_structure.h filter_structure.h tree_structure.h bestN.c)  
   target_link_libraries(bestN argos3plugin_simulator_kilolib)
 
   #

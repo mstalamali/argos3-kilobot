@@ -4,43 +4,33 @@
 
 Node::Node(){}
 
-Node::Node(const std::string Env,const int SwarmSize,const int Depth,const int Id,const float Alpha,const float Utility,const float Noise)
+Node::Node(const int SwarmSize,const int Depth,const int Id,const float Utility,const float Noise)
 {
     id = Id;
-
-    if(Env=="arena")
+    utility = Utility;
+    noise = Noise;
+    for(int i=0;i<SwarmSize;i++)
     {
-        utility = Utility;
-        noise = Noise;
-        for(int i=0;i<SwarmSize;i++)
-        {
-            committed_agents.push_back(0);
-        }
-    }
-    else
-    {
-        if(Depth==0)
-        {
-            filter = new Filter(Alpha,1);
-        }
-        else
-        {
-            filter = new Filter(Alpha,0);
-        }
+        committed_agents.push_back(0);
     }
 }
 
 Node::~Node()
 {
-    delete [] filter,parent,committed_agents,tl_br;
+    if(children.size()>0)
+    {
+        for(long unsigned int i = 0; i < children.size(); ++i)
+        {
+            this->children[i]->~Node();
+            delete [] children[i];
+        }
+    }
     for(int i = 0; i < kernel_size.GetY(); ++i)
     {
         delete [] kernel[i];
     }
-    for(int i = 0; i < children.size(); ++i)
-    {
-        delete [] children[i];
-    }
+    delete [] kernel;
+    delete [] parent;
 }
 
 void Node::set_parent(Node *Parent)
@@ -114,11 +104,6 @@ void Node::update_noise(const float Noise)
     noise = Noise;
 }
 
-void Node::update_filter(const float Sensed_utility,const float Ref_distance)
-{
-    filter->update_filter(Sensed_utility,Ref_distance);
-}
-
 int Node::get_distance_from_opt()
 {
     return distance_from_opt;
@@ -149,18 +134,39 @@ std::vector<Node *> Node::get_children()
     return children;
 }
 
-std::vector<Node *> Node::get_siblings()
+float Node::get_kernel_value(const CVector2 Position,const float Unit)
 {
-    std::vector<Node *> temp = parent->get_children();
-    std::vector<Node *> out;
-    for(int i=0;i<temp.size();i++)
+    unsigned int X=0,Y=0;
+    for(float y=tl_br.tl.GetY();y<tl_br.br.GetY();y+=Unit)
     {
-        if(temp[i]->id != this->id)
+        X=0;
+        for(float x=tl_br.tl.GetX();x<tl_br.br.GetX();x+=Unit)
         {
-            out.push_back(temp[i]);
+            if(Position.GetX()>=x-.005 && Position.GetX()<=x+.005)
+            {
+                if(Position.GetY()>=y-.005 && Position.GetY()<=y+.005)
+                {
+                    return kernel[Y][X];
+                }
+            }
+            X++;
         }
+        Y++;
     }
-    return out;
+    // std::cout<<X<<", "<<Y<<" - "<<Position<<"\n";
+    return -1;
+}
+
+bool Node::isin(CVector2 Position)
+{
+    if((Position.GetX()>=this->tl_br.tl.GetX()) && (Position.GetX()<=this->tl_br.br.GetX()))
+        {
+            if((Position.GetY()>=this->tl_br.tl.GetY()) && (Position.GetY()<=this->tl_br.br.GetY()))
+            {
+                return true;
+            }
+        }
+    return false;
 }
 
 float** Node::get_kernel()
@@ -171,4 +177,9 @@ float** Node::get_kernel()
 CVector2 Node::get_kernel_size()
 {
     return kernel_size;
+}
+
+std::vector<int> Node::get_committed_agents()
+{
+    return committed_agents;
 }

@@ -41,7 +41,7 @@
     
         <tracking
             position="true"
-            orientation="false"
+            orientation="true"
             color="false">
         </tracking>
 
@@ -54,8 +54,8 @@
         </variables>
 
         <hierarchicStruct
-            depth="1"
-            branches="4"
+            depth="2"
+            branches="2"
             k="0.75">
         </hierarchicStruct>
 
@@ -87,7 +87,7 @@
         <distribute>
             <position method="uniform" min="-.5,-0.5,0" max="0.5,0.5,0" />
             <orientation method="uniform" min="0,0,0" max="360,0,0" />
-            <entity quantity="100" max_trials="200">
+            <entity quantity="10" max_trials="200">
                 <kilobot id="kb">
                     <controller config="bestN"/> <dynamics2d friction="0.7" />
                 </kilobot>

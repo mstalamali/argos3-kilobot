@@ -7,7 +7,6 @@
 #define NODE_H
 #include <string>
 #include <random>
-#include "filter.h"
 #include <argos3/core/utility/math/vector2.h>
 
 namespace argos
@@ -24,7 +23,6 @@ class Node
         int distance_from_opt=-1;
         float utility=-1;
         float noise=-1;
-        Filter *filter=NULL;
         Node *parent=NULL;
         std::vector<Node *> children;
         std::vector<int> committed_agents;
@@ -38,7 +36,7 @@ class Node
     public:
         Node();
 
-        Node(const std::string Env,const int SwarmSize,const int Depth,const int Id,const float Alpha,const float Utility,const float Noise);
+        Node(const int SwarmSize,const int Depth,const int Id,const float Utility,const float Noise);
 
         ~Node();
                 
@@ -58,8 +56,6 @@ class Node
         
         void update_noise(const float Noise);
 
-        void update_filter(const float Sensed_utility,const float Ref_distance);
-
         int get_distance_from_opt();
 
         int get_id();
@@ -72,12 +68,18 @@ class Node
         
         std::vector<Node *> get_children();
         
-        std::vector<Node *> get_siblings();
-        
+        Node* get_sibling_node(int Node_id);
+
         float** get_kernel();
         
         CVector2 get_kernel_size();
 
+        bool isin(CVector2 Point);
+
+        float get_kernel_value(const CVector2 Position,const float Unit);
+
+        std::vector<int> get_committed_agents();
+        
         friend class hierarchicFloor;
 };
 #endif

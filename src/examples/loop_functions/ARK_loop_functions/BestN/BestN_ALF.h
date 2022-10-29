@@ -79,26 +79,23 @@ public:
     /** Setup the initial state of the kilobot pc_kilobot_entity */
     void SetupInitialKilobotState(CKilobotEntity& c_kilobot_entity);
 
-    /** Experiment configuration methods (From .argos files) */
-
     /** Setup virtual environment */
     void SetupVirtualEnvironments(TConfigurationNode& t_tree);
 
     /** Get experiment variables */
     void GetExperimentVariables(TConfigurationNode& t_tree);
 
-    /** Virtual environment visualization updating */
-
-
     /** Get the message to send to a Kilobot according to its position */
     void UpdateKilobotState(CKilobotEntity& c_kilobot_entity);
-
 
     /** Get the message to send to a Kilobot according to its position */
     void UpdateVirtualSensor(CKilobotEntity& c_kilobot_entity);
 
     /** Used to plot the Virtual environment on the floor */
     virtual CColor GetFloorColor(const CVector2& vec_position_on_plane);
+
+    /** Used to communicate intial field data and construct the hierarchic map*/
+    void SendInitInformation(CKilobotEntity &c_kilobot_entity);
 
 private:
 
@@ -118,7 +115,6 @@ private:
     } SRobotState;
 
     std::vector<SRobotState> m_vecKilobotStates;
-    std::vector<hierarchicFloor *> m_vecKilobotMaps;
     std::vector<Real> m_vecLastTimeMessaged;
     Real m_fMinTimeBetweenTwoMsg;
 
