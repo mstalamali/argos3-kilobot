@@ -110,11 +110,11 @@ private:
 
     typedef enum
     {
-        QUORUM_NOT_REACHED=0,
-        QUORUM_REACHED=1,
-    } SRobotState;
+        POSITION_NOT_REACHED=0,
+        POSITION_REACHED=1,
+    } SRobotGoalPosition;
 
-    std::vector<SRobotState> m_vecKilobotStates;
+    std::vector<SRobotGoalPosition> m_vecKilobotGoalPos;
     std::vector<Real> m_vecLastTimeMessaged;
     Real m_fMinTimeBetweenTwoMsg;
 

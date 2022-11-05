@@ -27,7 +27,7 @@ typedef enum {
 typedef enum {
     QUORUM_NOT_REACHED = 0,
     QUORUM_REACHED = 1,
-} state_t;
+} quorum_t;
 
 /* Message send to the other kilobots */
 message_t messageA;
@@ -46,7 +46,7 @@ uint32_t last_broadcast_ticks = 0;
 motion_t current_motion_type = STOP;
 
 /* current state */
-state_t current_state = QUORUM_NOT_REACHED;
+quorum_t current_state = QUORUM_NOT_REACHED;
 
 /* counters for motion, turning and random_walk */
 uint32_t last_turn_ticks = 0;
@@ -64,6 +64,11 @@ int sa_type = 3;
 int sa_payload = 0;
 bool new_sa_msg = false;
 
+typedef struct state
+{
+    int current_node,previous_node,commitment_node;
+}state_t;
+state_t mystate={0,0,0};
 tree_a *theTree=NULL;
 message_a *messagesList=NULL;
 message_a *inputBuffer=NULL;
@@ -105,16 +110,6 @@ void set_motion( motion_t new_motion_type ) {
 }
 
 /*-------------------------------------------------------------------*/
-/* Parse ARK received messages                                       */
-/*-------------------------------------------------------------------*/
-void parse_smart_arena_message(uint8_t data[9], uint8_t kb_index)
-{
-    // index of first element in the 3 sub-blocks of data
-    uint8_t shift = kb_index * 3;
-    sa_type = data[shift + 1] >> 2 & 0x0F;
-    sa_payload = ((data[shift + 1] & 0b11) << 8) | (data[shift + 2]);
-}
-/*-------------------------------------------------------------------*/
 /* Callback function for message reception                           */
 /*-------------------------------------------------------------------*/
 void message_rx(message_t *msg, distance_measurement_t *d) {
@@ -145,11 +140,16 @@ void message_rx(message_t *msg, distance_measurement_t *d) {
             sa_payload = ((msg->data[7]&0b11)  << 8) | (msg->data[8]);
             new_sa_msg = true;
         }
-
     }
-    else if(msg->type==1) //KILOBOT message
+    else if(msg->type==1) //ARK hierarchical struct parameters
     {
-
+        unsigned int second=msg->data[1];
+        float brX = (float)((msg->data[0]>>2)*.1);
+        float brY = (float)((msg->data[1]>>3)*.1);
+        int branches = (int)(msg->data[0] ^ ((int)(brX*10)<<2));
+        int depth = (int)(msg->data[1] ^ ((int)(brY*10)<<3));
+        complete_tree(&theTree,depth,branches);
+        set_vertices(&theTree,brX,brY);
     }
     else if (msg->type == 120) {
         int id = (msg->data[0] << 8) | msg->data[1];
@@ -159,6 +159,7 @@ void message_rx(message_t *msg, distance_measurement_t *d) {
             set_color(RGB(3,0,0));
         }
     }
+        // printf("Agent: %d, node_tl:_%f,%f___br:_%f,%f\n",kilo_uid,(*theTree).children[0].tlX,(*theTree).children[0].tlY,(*theTree).children[0].brX,(*theTree).children[0].brY);
     if(new_sa_msg==true){
         if((sa_type==0)&&(current_state==QUORUM_REACHED)){
             current_state=QUORUM_NOT_REACHED;
@@ -255,15 +256,10 @@ void setup()
     /* Initialise LED and motors */
     set_color(RGB(0,0,0));
     set_motors(0,0);
-
-    /* TODO implementa messagista per scambio iniziale di parametri
-        poi passa al test di messaggi e quorum*/
-    complete_tree(&theTree,1,4);
-    set_vertices(&theTree,0,0,1,1,.5,.5);
-    /**/
-
-    // printf("node_tl:_%f,%f___br:_%f,%f\n",(*theTree).children[0].tlX,(*theTree).children[0].tlY,(*theTree).children[0].brX,(*theTree).children[0].brY);
-
+    mystate.current_node=0;
+    mystate.previous_node=0;
+    mystate.commitment_node=0;
+    
     /* Initialise random seed */
     uint8_t seed = rand_hard();
     rand_seed(seed);

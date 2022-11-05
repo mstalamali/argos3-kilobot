@@ -215,10 +215,10 @@ void adjust_vertices(tree_a **mytree,const float offsetX,const float offsetY)
     }
 }
 
-void set_vertices(tree_a **mytree,const float TlX,const float TlY,const float BrX,const float BrY,const float offsetX,const float offsetY)
+void set_vertices(tree_a **mytree,const float BrX,const float BrY)
 {
-    (*mytree)->tlX=TlX;
-    (*mytree)->tlY=TlY;
+    (*mytree)->tlX=0;
+    (*mytree)->tlY=0;
     (*mytree)->brX=BrX;
     (*mytree)->brY=BrY;
     int indx=0;
@@ -231,6 +231,8 @@ void set_vertices(tree_a **mytree,const float TlX,const float TlY,const float Br
         }
     }
     loop_set_vertices(mytree,indx,-1);
+    float offsetX=BrX/2;
+    float offsetY=BrY/2;
     adjust_vertices(mytree,offsetX,offsetY);
 }
 

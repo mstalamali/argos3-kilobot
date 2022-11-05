@@ -54,10 +54,10 @@ void CBestN_ALF::Destroy() {
 /****************************************/
 
 void CBestN_ALF::SetupInitialKilobotStates() {
-    m_vecKilobotStates.resize(m_tKilobotEntities.size());
+    m_vecKilobotGoalPos.resize(m_tKilobotEntities.size());
     m_vecLastTimeMessaged.resize(m_tKilobotEntities.size());
     m_fMinTimeBetweenTwoMsg = Max<Real>(1.0, m_tKilobotEntities.size() * m_fTimeForAMessage / 3.0);
-
+    /* Create the virtual hierarchic environment over the arena */
     v_floor = new hierarchicFloor(TL,BR,m_tKilobotEntities.size(),depth,branches,10,k,1,this->GetSpace().GetArenaLimits().GetMax()[0],this->GetSpace().GetArenaLimits().GetMax()[1]);
     for(UInt16 it=0;it< m_tKilobotEntities.size();it++){
         /* Setup the virtual states of a kilobot */
@@ -71,18 +71,21 @@ void CBestN_ALF::SetupInitialKilobotStates() {
 void CBestN_ALF::SetupInitialKilobotState(CKilobotEntity &c_kilobot_entity){
     /* The kilobots begins outside the clustering hub*/
     UInt16 unKilobotID=GetKilobotId(c_kilobot_entity);
-    // SendInitInformation(c_kilobot_entity);
-    m_vecKilobotStates[unKilobotID] = QUORUM_NOT_REACHED;
+    m_vecKilobotGoalPos[unKilobotID] = POSITION_NOT_REACHED;
+    SendInitInformation(c_kilobot_entity);
 }
 
 /****************************************/
 /****************************************/
 
 void CBestN_ALF::SetupVirtualEnvironments(TConfigurationNode& t_tree){
+    /* Get the structure variables from the .argos file*/
     TConfigurationNode& tHierarchicalStructNode=GetNode(t_tree,"hierarchicStruct");
+    /* Get dimensions and quality scaling factor*/
     GetNodeAttribute(tHierarchicalStructNode,"depth",depth);
     GetNodeAttribute(tHierarchicalStructNode,"branches",branches);
     GetNodeAttribute(tHierarchicalStructNode,"k",k);
+    /* Get the coordinates for the top left and bottom right corners of the arena */
     TL = CVector2(float(this->GetSpace().GetArenaLimits().GetMin()[0]+this->GetSpace().GetArenaLimits().GetMax()[0]),float(this->GetSpace().GetArenaLimits().GetMin()[1]+this->GetSpace().GetArenaLimits().GetMax()[1]));
     BR = CVector2(float(this->GetSpace().GetArenaLimits().GetMax()[0]+this->GetSpace().GetArenaLimits().GetMax()[0]),float(this->GetSpace().GetArenaLimits().GetMax()[1]+this->GetSpace().GetArenaLimits().GetMax()[1]));
 }
@@ -109,7 +112,7 @@ void CBestN_ALF::GetExperimentVariables(TConfigurationNode& t_tree){
 void CBestN_ALF::UpdateKilobotState(CKilobotEntity &c_kilobot_entity){
     UInt16 unKilobotID=GetKilobotId(c_kilobot_entity);
     CVector2 cKilobotPosition=GetKilobotPosition(c_kilobot_entity);
-    m_vecKilobotStates[unKilobotID]=QUORUM_NOT_REACHED;
+    m_vecKilobotGoalPos[unKilobotID]=POSITION_NOT_REACHED;
     Node *cKilobotLeaf=v_floor->get_leaf_from_position(cKilobotPosition);
     // std::cout<<"kiloID:"<<unKilobotID<<", kiloLEAF:"<<cKilobotLeaf->get_id()<<", kernalVAL:"<<cKilobotLeaf->get_kernel_value(cKilobotPosition,v_floor->get_kernel_unit())<<"\n";
 }
@@ -124,6 +127,7 @@ void CBestN_ALF::UpdateVirtualSensor(CKilobotEntity &c_kilobot_entity){
     bool bMessageToSend=false;
     /* Get the kilobot ID and state (Only Position in this example) */
     UInt16 unKilobotID=GetKilobotId(c_kilobot_entity);
+    m_tMessages[unKilobotID].type=0;
     /* check if enough time has passed from the last message otherwise*/
     if (m_fTimeInSeconds - m_vecLastTimeMessaged[unKilobotID]< m_fMinTimeBetweenTwoMsg){
         return; // if the time is too short, the kilobot cannot receive a message
@@ -131,12 +135,12 @@ void CBestN_ALF::UpdateVirtualSensor(CKilobotEntity &c_kilobot_entity){
     else{
         /*  Prepare the inividual kilobot's message */
         tKilobotMessage.m_sID = unKilobotID;
-        tKilobotMessage.m_sType = (int)m_vecKilobotStates[unKilobotID];
+        /* communicate if the goal position has changed*/
+        tKilobotMessage.m_sType = (int)m_vecKilobotGoalPos[unKilobotID];
         /*  Set the message sending flag to True */
         bMessageToSend=true;
         m_vecLastTimeMessaged[unKilobotID] = m_fTimeInSeconds;
     }
-
     /* Send the message to the kilobot using the ARK messaging protocol (addressing 3 kilobots per one standard kilobot message)*/
     if(bMessageToSend){
         for (int i = 0; i < 9; ++i) {
@@ -176,7 +180,36 @@ void CBestN_ALF::SendInitInformation(CKilobotEntity &c_kilobot_entity)
     m_tALFKilobotMessage tKilobotMessage,tEmptyMessage,tMessage;
     /* Get the kilobot ID */
     UInt16 unKilobotID=GetKilobotId(c_kilobot_entity);
-    tKilobotMessage.m_sID = unKilobotID;
+    m_tMessages[unKilobotID].type=1;
+    UInt16 valX=(int)((float)BR.GetX()*10);
+    UInt16 valY=(int)((float)BR.GetY()*10);
+    tKilobotMessage.m_sType = 0;
+    tKilobotMessage.m_sID = valX<<2;
+    tKilobotMessage.m_sData = valY<<3;
+    tKilobotMessage.m_sID = tKilobotMessage.m_sID | branches;
+    tKilobotMessage.m_sData = tKilobotMessage.m_sData | depth;
+    for (int i = 0; i < 9; ++i)
+    {
+        m_tMessages[unKilobotID].data[i]=0;
+    }
+    // Prepare an empty ARK-type message to fill the gap in the full kilobot message
+    tEmptyMessage.m_sID=1023;
+    tEmptyMessage.m_sType=0;
+    tEmptyMessage.m_sData=0;
+    // Fill the kilobot message by the ARK-type messages
+    for (int i = 0; i < 3; ++i) {
+        if( i == 0){
+            tMessage = tKilobotMessage;
+        } else{
+            tMessage = tEmptyMessage;
+        }
+        m_tMessages[unKilobotID].data[i*3] = tMessage.m_sID;
+        m_tMessages[unKilobotID].data[1+i*3] = tMessage.m_sData;
+        m_tMessages[unKilobotID].data[2+i*3] = tMessage.m_sType;
+    }
+    // m_tMessages[unKilobotID].crc=message_crc(&m_tMessages[unKilobotID]);
+    GetSimulator().GetMedium<CKilobotCommunicationMedium>("kilocomm").SendOHCMessageTo(c_kilobot_entity,&m_tMessages[unKilobotID]);
+
 }
 
 /****************************************/
