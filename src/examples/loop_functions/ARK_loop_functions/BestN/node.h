@@ -1,7 +1,7 @@
 /**
  * @file <node.h>
  *
- * @author Fabio Oddi <fabio.oddi@uniroma1.it>
+ * @author Fabio Oddi <fabio.oddi@diag.uniroma1.it>
  */
 #ifndef NODE_H
 #define NODE_H
@@ -25,9 +25,6 @@ class Node
         float noise=-1;
         Node *parent=NULL;
         std::vector<Node *> children;
-        std::vector<int> committed_agents;
-        float **kernel=NULL;
-        CVector2 kernel_size=CVector2();
         struct Vertices
         {
             CVector2 tl=CVector2(),br=CVector2(),tl_offset=CVector2(),br_offset=CVector2();
@@ -50,8 +47,6 @@ class Node
         
         void set_vertices_offset(CVector2 Tl,CVector2 Br);
 
-        void init_kernel(const float Unit);
-
         void update_utility(const float Utility);
         
         void update_noise(const float Noise);
@@ -70,16 +65,8 @@ class Node
         
         Node* get_sibling_node(int Node_id);
 
-        float** get_kernel();
-        
-        CVector2 get_kernel_size();
-
         bool isin(CVector2 Point);
 
-        float get_kernel_value(const CVector2 Position,const float Unit);
-
-        std::vector<int> get_committed_agents();
-        
         friend class hierarchicFloor;
 };
 #endif

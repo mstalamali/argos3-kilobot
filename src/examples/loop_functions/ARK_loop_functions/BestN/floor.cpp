@@ -1,4 +1,4 @@
-// @author Fabio Oddi <fabio.oddi@uniroma1.it>
+// @author Fabio Oddi <fabio.oddi@diag.uniroma1.it>
 
 #include "floor.h"
 
@@ -16,7 +16,6 @@ hierarchicFloor::hierarchicFloor(const CVector2 Tl,const CVector2 Br,const int S
     v_offset.y = Offsety;
 
     root = new Node(swarm_size,depth,0,max_utility*k,noise);
-    for(int i=0;i<root->committed_agents.size();i++) root->committed_agents[i]=1;
     // std::cout <<"root id: "<<root->id<<", "<<root->utility<<"\n";
     num_nodes++;
     root->set_vertices(Tl,Br);
@@ -79,7 +78,8 @@ void hierarchicFloor::complete_tree(Node *ToComplete,const int Deep)
 
 void hierarchicFloor::assign_random_MAXutility()
 {
-    Node *random_leaf = leafs[rand()%leafs.size()];
+    std::uniform_int_distribution<int> distribution(0,leafs.size()-1);
+    Node *random_leaf = leafs[distribution(generator)];
     random_leaf->update_utility(max_utility);
     random_leaf->set_distance_from_opt(0);
     if(random_leaf->parent!=NULL)
@@ -136,10 +136,6 @@ void hierarchicFloor::set_distances_from_opt_node(Node *Start_node,const int Dis
 void hierarchicFloor::set_vertices_and_kernel()
 {
     this->set_vertices();
-    for(long unsigned int i=0;i<this->leafs.size();i++)
-    {
-        this->leafs[i]->init_kernel(kernel_unit);
-    }
 }
 
 void hierarchicFloor::set_vertices()

@@ -6,7 +6,7 @@
  * @cite Reina, A., Cope, A. J., Nikolaidis, E., Marshall, J. A. R., & Sabo, C. (2017). ARK: Augmented Reality for Kilobots.
  * IEEE Robotics and Automation Letters, 2(3), 1755–1761. https://doi.org/10.1109/LRA.2017.2700059
  *
- * @author Fabio Oddi <fabio.oddi@uniroma1.it>
+ * @author Fabio Oddi <fabio.oddi@diag.uniroma1.it>
  */
 
 
@@ -95,8 +95,13 @@ public:
     virtual CColor GetFloorColor(const CVector2& vec_position_on_plane);
 
     /** Used to communicate intial field data and construct the hierarchic map*/
-    void SendInitInformation(CKilobotEntity &c_kilobot_entity);
+    void SendStructInitInformation(CKilobotEntity &c_kilobot_entity);
 
+    void SendInitKilobotGPS(CKilobotEntity &c_kilobot_entity);
+
+    void SendInit4DataSensing(CKilobotEntity &c_kilobot_entity);
+
+    CVector2 PositionToGPS(CVector2 t_position);
 private:
 
     /************************************/
@@ -114,9 +119,27 @@ private:
         POSITION_REACHED=1,
     } SRobotGoalPosition;
 
-    std::vector<SRobotGoalPosition> m_vecKilobotGoalPos;
+    typedef enum
+    {
+        QUORUM_NOT_REACHED=0,
+        QUORUM_REACHED=1,
+    } SRobotQuorum;
+
+    typedef struct
+    {
+        int current_node,previous_node,commitment_node;
+    } SRobotNodes;
+    std::vector<SRobotGoalPosition> m_vecKilobotGoalInfo;
+    std::vector<SRobotQuorum> m_vecKilobotQuorum;
+    std::vector<SRobotNodes> m_vecKilobotNodes;
     std::vector<Real> m_vecLastTimeMessaged;
     Real m_fMinTimeBetweenTwoMsg;
+
+    /* Number of GPS cells */
+    UInt16 m_unGpsCells;
+
+    /* GPS cell length in meters */
+    Real m_fCellLength;
 
     /************************************/
     /*       Experiment variables       */

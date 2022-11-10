@@ -25,6 +25,7 @@ class hierarchicFloor
         float max_utility=-1;
         float k=-1;
         float noise=-1;
+        std::default_random_engine generator;
 
     public:
         hierarchicFloor();
