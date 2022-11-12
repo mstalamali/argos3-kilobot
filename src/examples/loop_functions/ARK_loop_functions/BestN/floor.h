@@ -67,5 +67,8 @@ class hierarchicFloor
         Node* get_node(Node *Start_node,const int Id);
 
         Node* get_leaf_from_position(CVector2 Position);
+
+        float* get_offset_x();
+        float* get_offset_y();
 };
 #endif

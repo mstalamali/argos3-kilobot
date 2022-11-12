@@ -8,10 +8,6 @@
  *
  * @author Fabio Oddi <fabio.oddi@diag.uniroma1.it>
  */
-
-
-
-
 #ifndef BESTN_ALF_H
 #define BESTN_ALF_H
 
@@ -54,9 +50,7 @@ class CSimulator;
 
 #include <array>
 
-
 using namespace argos;
-
 
 class CBestN_ALF : public CALF
 {
@@ -95,13 +89,11 @@ public:
     virtual CColor GetFloorColor(const CVector2& vec_position_on_plane);
 
     /** Used to communicate intial field data and construct the hierarchic map*/
-    void SendStructInitInformation(CKilobotEntity &c_kilobot_entity);
+    void SendStructInitInformationA(CKilobotEntity &c_kilobot_entity);
+    void SendStructInitInformationB(CKilobotEntity &c_kilobot_entity);
+    void SendInformationGPS_A(CKilobotEntity &c_kilobot_entity, const int Type);
+    void SendInformationGPS_B(CKilobotEntity &c_kilobot_entity, const int Type);
 
-    void SendInitKilobotGPS(CKilobotEntity &c_kilobot_entity);
-
-    void SendInit4DataSensing(CKilobotEntity &c_kilobot_entity);
-
-    CVector2 PositionToGPS(CVector2 t_position);
 private:
 
     /************************************/
@@ -113,26 +105,16 @@ private:
     CVector2 TL,BR;
     hierarchicFloor *v_floor;
 
-    typedef enum
-    {
-        POSITION_NOT_REACHED=0,
-        POSITION_REACHED=1,
-    } SRobotGoalPosition;
-
-    typedef enum
-    {
-        QUORUM_NOT_REACHED=0,
-        QUORUM_REACHED=1,
-    } SRobotQuorum;
-
     typedef struct
     {
         int current_node,previous_node,commitment_node;
     } SRobotNodes;
-    std::vector<SRobotGoalPosition> m_vecKilobotGoalInfo;
-    std::vector<SRobotQuorum> m_vecKilobotQuorum;
+
     std::vector<SRobotNodes> m_vecKilobotNodes;
     std::vector<Real> m_vecLastTimeMessaged;
+    std::vector<int> m_vecStart_experiment;
+    std::vector<int> m_vecGpsData;
+    bool start_experiment = false;
     Real m_fMinTimeBetweenTwoMsg;
 
     /* Number of GPS cells */

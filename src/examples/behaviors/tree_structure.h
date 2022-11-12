@@ -4,17 +4,19 @@
 
 int num_nodes=0;
 int branches=2;
+int Leafs_size=0;
 
 typedef struct tree_structure
 {
     int id;
+    float gt_utility;
     struct tree_structure *parent;
     struct tree_structure *children;
     float tlX,tlY,brX,brY;
     filter_a *node_filter;
 }tree_a;
 
-void loop_complete_tree(tree_a **mytree,const int Depth) //cazzo de puntatori
+void loop_complete_tree(tree_a **mytree,const int Depth,unsigned int *Leafs_id,unsigned int *Leafs_size, const unsigned int Best_leaf_id,const float Max_utility, const float K) 
 {
     if(Depth>=0)
     {
@@ -30,16 +32,30 @@ void loop_complete_tree(tree_a **mytree,const int Depth) //cazzo de puntatori
             (c+i)->brY=0;
             (c+i)->node_filter=(filter_a*)malloc(sizeof(filter_a));
             if(Depth > 0) set_filter((c+i)->node_filter,.75,0);
-            else set_filter((c+i)->node_filter,.75,1);
+            else
+            {
+                *(Leafs_id + *Leafs_size) = (c+i)->id;
+                *Leafs_size = *Leafs_size+1;
+                set_filter((c+i)->node_filter,.75,1);
+                if((c+i)->id==Best_leaf_id)
+                {
+                    (c+i)->gt_utility=Max_utility;
+                }
+                else
+                {
+                    (c+i)->gt_utility=Max_utility*K;
+                }
+            }
             tree_a *cc= (c+i);
-            loop_complete_tree(&cc,Depth-1);
+            loop_complete_tree(&cc,Depth-1,Leafs_id,Leafs_size,Best_leaf_id,Max_utility,K);
         }
     }
 }
 
-void complete_tree(tree_a **mytree,const int Depth,const int Branches)
+void complete_tree(tree_a **mytree,const int Depth,const int Branches,unsigned int *Leafs_id,unsigned int *Leafs_size, const unsigned int Best_leaf_id,const float Max_utility, const float K)
 {
     branches=Branches;
+    for(int i=0;i<16;i++) *(Leafs_id+i)=-1;
     *mytree=(tree_a*)malloc(sizeof(tree_a));
     (*mytree)->id=num_nodes++;
     (*mytree)->tlX=0,(*mytree)->tlY=0,(*mytree)->brX=0,(*mytree)->brY=0;
@@ -47,7 +63,7 @@ void complete_tree(tree_a **mytree,const int Depth,const int Branches)
     (*mytree)->children=NULL;
     (*mytree)->node_filter = (filter_a*)malloc(sizeof(filter_a));
     set_filter((*mytree)->node_filter,.75,0);
-    loop_complete_tree(mytree,Depth-1);
+    loop_complete_tree(mytree,Depth-1,Leafs_id,Leafs_size,Best_leaf_id,Max_utility,K);
 }
 
 tree_a* get_node(tree_a **mytree,const int Node_id)
@@ -198,23 +214,6 @@ void loop_set_vertices(tree_a **mytree,const int Index,const int Ref)
     }
 }
 
-void adjust_vertices(tree_a **mytree,const float offsetX,const float offsetY)
-{
-    (*mytree)->tlX=(*mytree)->tlX-offsetX;
-    (*mytree)->tlY=(*mytree)->tlY-offsetY;
-    (*mytree)->brX=(*mytree)->brX-offsetX;
-    (*mytree)->brY=(*mytree)->brY-offsetY;
-    tree_a *c=(*mytree)->children;
-    if(c!=NULL)
-    {
-        for(int i=0;i<branches;i++)
-        {
-            tree_a *cc=c+i;
-            adjust_vertices(&cc,offsetX,offsetY);
-        }
-    }
-}
-
 void set_vertices(tree_a **mytree,const float BrX,const float BrY)
 {
     (*mytree)->tlX=0;
@@ -231,9 +230,6 @@ void set_vertices(tree_a **mytree,const float BrX,const float BrY)
         }
     }
     loop_set_vertices(mytree,indx,-1);
-    float offsetX=BrX/2;
-    float offsetY=BrY/2;
-    adjust_vertices(mytree,offsetX,offsetY);
 }
 
 void erase_tree(tree_a **mytree)

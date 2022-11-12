@@ -353,7 +353,9 @@ Node* hierarchicFloor::get_leaf_from_position(CVector2 Position)
     return NULL;
 }
 
-float hierarchicFloor::get_kernel_unit()
-{
-    return kernel_unit;
+float* hierarchicFloor::get_offset_x(){
+    return& v_offset.x;
+}
+float* hierarchicFloor::get_offset_y(){
+    return& v_offset.y;
 }

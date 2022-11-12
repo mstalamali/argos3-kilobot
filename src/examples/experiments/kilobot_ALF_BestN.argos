@@ -42,7 +42,7 @@
         <tracking
             position="true"
             orientation="true"
-            color="false">
+            color="true">
         </tracking>
 
         
