@@ -74,6 +74,7 @@ void CBestN_ALF::SetupInitialKilobotState(CKilobotEntity &c_kilobot_entity){
     /* The kilobots begins in the root node with a random goal position inside it */
     UInt16 unKilobotID=GetKilobotId(c_kilobot_entity);
     m_vecKilobotNodes[unKilobotID]={0,0,0};
+
 }
 
 /****************************************/
@@ -105,10 +106,6 @@ void CBestN_ALF::GetExperimentVariables(TConfigurationNode& t_tree){
     GetNodeAttributeOrDefault(tExperimentVariablesNode, "m_unEnvironmentPlotUpdateFrequency", m_unEnvironmentPlotUpdateFrequency, m_unEnvironmentPlotUpdateFrequency);
     /* Get the time for one kilobot message */
     GetNodeAttributeOrDefault(tExperimentVariablesNode, "timeforonemessage", m_fTimeForAMessage, m_fTimeForAMessage);
-
-    /* Get the time for one kilobot message */
-    GetNodeAttributeOrDefault(tExperimentVariablesNode, "gps_cells", m_unGpsCells, m_unGpsCells);
-    m_fCellLength=GetSpace().GetArenaSize().GetX()/m_unGpsCells;
 }
 
 /****************************************/
@@ -176,7 +173,7 @@ void CBestN_ALF::UpdateVirtualSensor(CKilobotEntity &c_kilobot_entity){
                 SendInformationGPS_B(c_kilobot_entity,1);
                 break;
         }
-    }    
+    }
 }
 
 /****************************************/
@@ -198,7 +195,7 @@ void CBestN_ALF::SendStructInitInformationA(CKilobotEntity &c_kilobot_entity)
     tKilobotMessage.m_sData = (v_floor->get_best_leaf()->get_id()-1)<<2;
     tKilobotMessage.m_sData = tKilobotMessage.m_sData | (depth-1);
     // Fill the kilobot message by the ARK-type messages
-    m_tMessages[unKilobotID].data[0] = tKilobotMessage.m_sID>>2;
+    m_tMessages[unKilobotID].data[0] = tKilobotMessage.m_sID>>2 | ((UInt8)(tKilobotMessage.m_sType & 0b0100))<<5;
     m_tMessages[unKilobotID].data[1] = (((UInt8)tKilobotMessage.m_sType)<<6) | tKilobotMessage.m_sData>>2;
     m_tMessages[unKilobotID].data[2] = (tKilobotMessage.m_sID & 0b0000000011)<<2 | (tKilobotMessage.m_sData& 0b0000000011);
     GetSimulator().GetMedium<CKilobotCommunicationMedium>("kilocomm").SendOHCMessageTo(c_kilobot_entity,&m_tMessages[unKilobotID]);
@@ -222,7 +219,7 @@ void CBestN_ALF::SendStructInitInformationB(CKilobotEntity &c_kilobot_entity)
     tKilobotMessage.m_sID = valX;
     tKilobotMessage.m_sData = valY;
     // Fill the kilobot message by the ARK-type messages
-    m_tMessages[unKilobotID].data[0] = tKilobotMessage.m_sID;
+    m_tMessages[unKilobotID].data[0] = tKilobotMessage.m_sID | ((UInt8)(tKilobotMessage.m_sType & 0b0100))<<5;
     m_tMessages[unKilobotID].data[1] = (((UInt8)tKilobotMessage.m_sType)<<6) | tKilobotMessage.m_sData;
     GetSimulator().GetMedium<CKilobotCommunicationMedium>("kilocomm").SendOHCMessageTo(c_kilobot_entity,&m_tMessages[unKilobotID]);
 }
@@ -257,7 +254,7 @@ void CBestN_ALF::SendInformationGPS_A(CKilobotEntity &c_kilobot_entity, const in
         } else{
             tMessage = tEmptyMessage;
         }
-        m_tMessages[GetKilobotId(c_kilobot_entity)].data[i*3] = tMessage.m_sID>>3;
+        m_tMessages[GetKilobotId(c_kilobot_entity)].data[i*3] = tMessage.m_sID>>3 | ((UInt8)(tKilobotMessage.m_sType & 0b0100))<<5;
         m_tMessages[GetKilobotId(c_kilobot_entity)].data[1+i*3] = ((UInt8)tKilobotMessage.m_sType)<<6 | ((UInt8)tMessage.m_sID & 0b00000111)<<3 | tMessage.m_sData>>7;
         m_tMessages[GetKilobotId(c_kilobot_entity)].data[2+i*3] = ((UInt8)(tMessage.m_sData>>6) & 0b00000001)<<7 | ((UInt8)tMessage.m_sData & 0b00111111)<<1 | tMessage.m_sType>>3;
     }
@@ -291,7 +288,7 @@ void CBestN_ALF::SendInformationGPS_B(CKilobotEntity &c_kilobot_entity, const in
         } else{
             tMessage = tEmptyMessage;
         }
-        m_tMessages[GetKilobotId(c_kilobot_entity)].data[i*3] = tMessage.m_sID>>3;
+        m_tMessages[GetKilobotId(c_kilobot_entity)].data[i*3] = tMessage.m_sID>>3 | ((UInt8)(tKilobotMessage.m_sType & 0b0100))<<5;
         m_tMessages[GetKilobotId(c_kilobot_entity)].data[1+i*3] = ((UInt8)tKilobotMessage.m_sType)<<6;
         m_tMessages[GetKilobotId(c_kilobot_entity)].data[2+i*3] = (UInt8)(tMessage.m_sData>>3);
     }

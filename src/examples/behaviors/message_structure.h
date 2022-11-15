@@ -1,7 +1,7 @@
 #ifndef MESSAGE_STRCUCT_H
 #define MESSAGE_STRCUCT_H
 
-int expiring_time_messages=11;
+int expiring_time_messages=10000;
 
 typedef struct message_structure
 {
@@ -25,6 +25,24 @@ void erase_messages(message_a **mymessage)
     }
     (*mymessage)->prev=NULL;
     free((*mymessage));
+}
+
+int is_fresh(message_a **mymessage,const int Agent_id, const int Counter)
+{
+    int out;
+    out=1;
+    if((*mymessage)->agent_id==Agent_id)
+    {
+        if((*mymessage)->counter<Counter) out = 0;
+        else out=2;
+    }
+    if(out==1 && (*mymessage)->next!=NULL)
+    {
+        message_a *flag=(*mymessage)->next;
+        out=is_fresh(&flag,Agent_id,Counter);
+    }
+    if(out==2) out=1;
+    return out;
 }
 
 void add_a_message(message_a **mymessage,const int Agent_id,const int Agent_node, const int Agent_leaf, const int Counter, const float Leaf_utility)
@@ -58,7 +76,7 @@ void add_a_message(message_a **mymessage,const int Agent_id,const int Agent_node
 }
 
 void erase_expired_messages(message_a **mymessage)
-{
+{ //AGGIUSTA
     message_a *current_message=(*mymessage);
     if(current_message->counter >= expiring_time_messages)
     {
@@ -91,37 +109,37 @@ void erase_expired_messages(message_a **mymessage)
     if(current_message!=NULL) erase_expired_messages(&current_message);
 }
 
-void read_from_buffer(message_a **buffer, message_a **messages, const int myID)
-{
-    message_a *item_to_check=(*buffer);
-    while (item_to_check!=NULL)
-    {
-        if(item_to_check->agent_id!=myID)
-        {
-            int toADD=1;
-            message_a *current_message=(*messages);
-            while (current_message!=NULL)
-            {
-                if(current_message->agent_id==item_to_check->agent_id)
-                {
-                    toADD=0;
-                    if(item_to_check->counter<current_message->counter)
-                    {
-                        current_message->counter=item_to_check->counter;
-                        current_message->agent_node=item_to_check->agent_node;
-                        current_message->agent_leaf=item_to_check->agent_leaf;
-                        current_message->leaf_utility=item_to_check->leaf_utility;
-                    }
-                    break;
-                }
-                current_message=current_message->next;
-            }
-            if(toADD) add_a_message(messages,item_to_check->agent_id,item_to_check->agent_node,item_to_check->agent_leaf,item_to_check->counter,item_to_check->leaf_utility);
-        }
-        item_to_check=item_to_check->next;
-    }
-    erase_messages(buffer);
-}
+// void read_from_buffer(message_a **buffer, message_a **messages, const int myID)
+// {
+//     message_a *item_to_check=(*buffer);
+//     while (item_to_check!=NULL)
+//     {
+//         if(item_to_check->agent_id!=myID)
+//         {
+//             int toADD=1;
+//             message_a *current_message=(*messages);
+//             while (current_message!=NULL)
+//             {
+//                 if(current_message->agent_id==item_to_check->agent_id)
+//                 {
+//                     toADD=0;
+//                     if(item_to_check->counter<current_message->counter)
+//                     {
+//                         current_message->counter=item_to_check->counter;
+//                         current_message->agent_node=item_to_check->agent_node;
+//                         current_message->agent_leaf=item_to_check->agent_leaf;
+//                         current_message->leaf_utility=item_to_check->leaf_utility;
+//                     }
+//                     break;
+//                 }
+//                 current_message=current_message->next;
+//             }
+//             if(toADD) add_a_message(messages,item_to_check->agent_id,item_to_check->agent_node,item_to_check->agent_leaf,item_to_check->counter,item_to_check->leaf_utility);
+//         }
+//         item_to_check=item_to_check->next;
+//     }
+//     erase_messages(buffer);
+// }
 
 void increment_counter_messages(message_a **mymessage)
 {

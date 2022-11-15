@@ -73,4 +73,9 @@ void erase_filter(filter_a *myfilter)
     free(myfilter->data_2);
 }
 
+float get_utility(filter_a *myfilter)
+{
+    return myfilter->utility;
+}
+
 #endif

@@ -216,10 +216,10 @@ void loop_set_vertices(tree_a **mytree,const int Index,const int Ref)
 
 void set_vertices(tree_a **mytree,const float BrX,const float BrY)
 {
-    (*mytree)->tlX=0;
-    (*mytree)->tlY=0;
-    (*mytree)->brX=BrX;
-    (*mytree)->brY=BrY;
+    (*mytree)->tlX=0.03;
+    (*mytree)->tlY=0.03;
+    (*mytree)->brX=BrX-.03;
+    (*mytree)->brY=BrY-.03;
     int indx=0;
     for(int i=1;i<=4;i++)
     {
@@ -250,4 +250,8 @@ void erase_tree(tree_a **mytree)
     free(*mytree);
 }
 
+int get_id(tree_a **mytree)
+{   
+    return (*mytree)->id;
+}
 #endif

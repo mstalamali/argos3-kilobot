@@ -7,8 +7,7 @@
     <framework>
         <system threads="0" />
         <experiment length="0"
-        ticks_per_second="10"
-        random_seed="124" />
+        ticks_per_second="10"/>
     </framework>
     
     <!-- *************** -->
@@ -22,6 +21,7 @@
                 bias_avg="0.000015"
                 bias_stddev="0.00186"
                 />
+                <kilobot_communication implementation="default" />
                 <kilobot_led implementation="default" />
             </actuators>
             <sensors>
@@ -50,8 +50,7 @@
             datafilename="data_file.txt"
             dataacquisitionfrequency="10"  
             environmentplotupdatefrequency="10"
-            timeforonemessage="0.05"
-            gps_cells="32">
+            timeforonemessage="0.05">
         </variables>
 
         <hierarchicStruct
@@ -69,7 +68,7 @@
     <!-- *********************** -->
     <!-- * Arena configuration * -->
     <!-- *********************** -->
-    <arena size=".5, .5, .5" center="0,0,0">
+    <arena size=".5, .5, 1" center="0,0,0">
         
         <box id="wall_north" size=".5,0.01,0.1" movable="false">
             <body position="0,.25,0" orientation="0,0,0" />
@@ -88,7 +87,7 @@
         <distribute>
             <position method="uniform" min="-.25,-0.25,0" max="0.25,0.25,0" />
             <orientation method="uniform" min="0,0,0" max="360,0,0" />
-            <entity quantity="20" max_trials="200">
+            <entity quantity="10" max_trials="200">
                 <kilobot id="kb">
                     <controller config="bestN"/> <dynamics2d friction="0.7" />
                 </kilobot>
@@ -122,7 +121,7 @@
     <visualization>
         <qt-opengl>
             <camera>
-                <placement idx="0" position="0,0,0" look_at="0,0,0" lens_focal_length="12" />
+                <placement idx="0" position=".5,.5,1" look_at="0,0,0" lens_focal_length="30" />
             </camera>
         </qt-opengl>
     </visualization>

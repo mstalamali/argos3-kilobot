@@ -54,6 +54,12 @@
         "cinttypes": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp",
-        "wordsize.h": "c"
+        "wordsize.h": "c",
+        "message_structure.h": "c",
+        "stdlib.h": "c",
+        "kilolib.h": "c",
+        "stdint.h": "c",
+        "message.h": "c",
+        "test_debug.h": "c"
     }
 }
