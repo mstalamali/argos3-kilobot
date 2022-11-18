@@ -1,10 +1,10 @@
 // @author Fabio Oddi <fabio.oddi@diag.uniroma1.it>
 
-#include "floor.h"
+#include "hierarchicFloor.h"
 
-hierarchicFloor::hierarchicFloor(){}
+ChierarchicFloor::ChierarchicFloor(){}
 
-hierarchicFloor::hierarchicFloor(const CVector2 Tl,const CVector2 Br,const int SwarmSize,const int Depth,const int Branches,const float Utility,const float K,const float Noise,const float Offsetx,const float Offsety)
+ChierarchicFloor::ChierarchicFloor(const CVector2 Tl,const CVector2 Br,const int SwarmSize,const int Depth,const int Branches,const float Utility,const float K,const float Noise,const float Offsetx,const float Offsety)
 {
     swarm_size = SwarmSize;
     depth = Depth;
@@ -24,14 +24,14 @@ hierarchicFloor::hierarchicFloor(const CVector2 Tl,const CVector2 Br,const int S
     set_vertices_and_kernel();
 }
 
-hierarchicFloor::~hierarchicFloor()
+ChierarchicFloor::~ChierarchicFloor()
 {
     root->~Node();
     for(int i=0;i<leafs.size();i++) delete [] leafs[i];
     delete [] root;
 }
 
-void hierarchicFloor::complete_tree()
+void ChierarchicFloor::complete_tree()
 {
     int deep = depth-1;
     for(long unsigned int i=0;i<branches;i++)
@@ -52,7 +52,7 @@ void hierarchicFloor::complete_tree()
     }
 }
 
-void hierarchicFloor::complete_tree(Node *ToComplete,const int Deep)
+void ChierarchicFloor::complete_tree(Node *ToComplete,const int Deep)
 {
     if(Deep>0)
     {
@@ -76,7 +76,7 @@ void hierarchicFloor::complete_tree(Node *ToComplete,const int Deep)
     }
 }
 
-void hierarchicFloor::assign_random_MAXutility()
+void ChierarchicFloor::assign_random_MAXutility()
 {
     std::uniform_int_distribution<int> distribution(0,leafs.size()-1);
     Node *random_leaf = leafs[distribution(generator)];
@@ -89,7 +89,7 @@ void hierarchicFloor::assign_random_MAXutility()
     }
 }
 
-void hierarchicFloor::bottom_up_utility_update(Node *Start_node)
+void ChierarchicFloor::bottom_up_utility_update(Node *Start_node)
 {
     float utility_temp  = 0;
     for(long unsigned int i=0;i<branches;i++)
@@ -106,7 +106,7 @@ void hierarchicFloor::bottom_up_utility_update(Node *Start_node)
     }
 }
 
-void hierarchicFloor::set_distances_from_opt_node(Node *Start_node,const int Distance)
+void ChierarchicFloor::set_distances_from_opt_node(Node *Start_node,const int Distance)
 {
     if(Start_node->parent!=NULL)
     {
@@ -133,12 +133,12 @@ void hierarchicFloor::set_distances_from_opt_node(Node *Start_node,const int Dis
     }
 }
 
-void hierarchicFloor::set_vertices_and_kernel()
+void ChierarchicFloor::set_vertices_and_kernel()
 {
     this->set_vertices();
 }
 
-void hierarchicFloor::set_vertices()
+void ChierarchicFloor::set_vertices()
 {
     int indx=0;
     for(int i=0;i<12;i++)
@@ -160,7 +160,7 @@ void hierarchicFloor::set_vertices()
     }
 }
 
-void hierarchicFloor::loop_set_vertices(Node *Start_node,const int Index,const int Ref)
+void ChierarchicFloor::loop_set_vertices(Node *Start_node,const int Index,const int Ref)
 {   
     float w1 = Start_node->get_top_left_angle().GetX();
     float w2 = Start_node->get_bottom_right_angle().GetX();
@@ -243,7 +243,7 @@ void hierarchicFloor::loop_set_vertices(Node *Start_node,const int Index,const i
     }
 }
 
-void hierarchicFloor::adjust_vertices(Node *Start_node)
+void ChierarchicFloor::adjust_vertices(Node *Start_node)
 {   
     Start_node->set_vertices_offset(CVector2(Start_node->get_top_left_angle().GetX(),Start_node->get_top_left_angle().GetY()),CVector2(Start_node->get_bottom_right_angle().GetX(),Start_node->get_bottom_right_angle().GetY()));
     Start_node->set_vertices(CVector2(Start_node->get_top_left_angle().GetX()-v_offset.x,Start_node->get_top_left_angle().GetY()-v_offset.y),CVector2(Start_node->get_bottom_right_angle().GetX()-v_offset.x,Start_node->get_bottom_right_angle().GetY()-v_offset.y));
@@ -257,7 +257,7 @@ void hierarchicFloor::adjust_vertices(Node *Start_node)
     }
 }
 
-std::vector<Node *> hierarchicFloor::get_leafs_from_node(Node *Start_node)
+std::vector<Node *> ChierarchicFloor::get_leafs_from_node(Node *Start_node)
 {
     std::vector<Node *> out;
     if(Start_node->children.size()==branches)
@@ -278,17 +278,17 @@ std::vector<Node *> hierarchicFloor::get_leafs_from_node(Node *Start_node)
     return out;
 }
 
-std::vector<Node *> hierarchicFloor::get_leafs()
+std::vector<Node *> ChierarchicFloor::get_leafs()
 {
     return leafs;
 }
 
-Node* hierarchicFloor::get_random_leaf()
+Node* ChierarchicFloor::get_random_leaf()
 {
     return leafs[rand()%leafs.size()];
 }
 
-Node* hierarchicFloor::get_best_leaf()
+Node* ChierarchicFloor::get_best_leaf()
 {
     for(long unsigned int i=0;i<leafs.size();i++)
     {
@@ -300,7 +300,7 @@ Node* hierarchicFloor::get_best_leaf()
     return NULL;
 }
 
-Node* hierarchicFloor::get_node(const int Id)
+Node* ChierarchicFloor::get_node(const int Id)
 {
     if(root->id==Id){
         return root;
@@ -317,7 +317,7 @@ Node* hierarchicFloor::get_node(const int Id)
     return NULL;
 }
 
-Node* hierarchicFloor::get_node(Node* Start_node,const int Id)
+Node* ChierarchicFloor::get_node(Node* Start_node,const int Id)
 {
     if(Start_node->id==Id)
     {
@@ -338,7 +338,7 @@ Node* hierarchicFloor::get_node(Node* Start_node,const int Id)
     return NULL;
 }
 
-Node* hierarchicFloor::get_leaf_from_position(CVector2 Position)
+Node* ChierarchicFloor::get_leaf_from_position(CVector2 Position)
 {
     for(long unsigned int i=0;i<leafs.size();i++)
     {
@@ -353,9 +353,9 @@ Node* hierarchicFloor::get_leaf_from_position(CVector2 Position)
     return NULL;
 }
 
-float* hierarchicFloor::get_offset_x(){
+float* ChierarchicFloor::get_offset_x(){
     return& v_offset.x;
 }
-float* hierarchicFloor::get_offset_y(){
+float* ChierarchicFloor::get_offset_y(){
     return& v_offset.y;
 }

@@ -67,6 +67,6 @@ class Node
 
         bool isin(CVector2 Point);
 
-        friend class hierarchicFloor;
+        friend class ChierarchicFloor;
 };
 #endif

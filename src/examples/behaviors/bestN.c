@@ -80,6 +80,7 @@ uint32_t maxWaypointTime=3600;//3600; // about 2 minutes
 state_t my_state={0,0,0};
 
 unsigned int turning_ticks = 0;
+unsigned int straight_ticks = 0;
 const uint8_t max_turning_ticks = 160; /* constant to allow a maximum rotation of 180 degrees with \omega=\pi/5 */
 const uint16_t max_straight_ticks = 320; /* set the \tau_m period to 2.5 s: n_m = \tau_m/\delta_t = 2.5/(1/32) */
 uint32_t last_motion_ticks = 0;
@@ -100,9 +101,10 @@ tree_a *the_tree=NULL;
 const uint16_t max_broadcast_ticks = 3;
 const uint16_t words_4_a_message = 3;
 uint32_t last_broadcast_ticks = 0;
-const uint16_t broadcasting_ticks = max_broadcast_ticks*(words_4_a_message+1)*4;
+const uint16_t broadcasting_ticks = max_broadcast_ticks*(words_4_a_message+1)*100;
 unsigned int last_sensing_ticks=-broadcasting_ticks;
 unsigned int last_message_update_ticks=-broadcasting_ticks;
+unsigned int min_time_to_repeat;
 
 /* Flag for decision to send a word */
 bool sending_msg = false;
@@ -110,18 +112,26 @@ int sending_type = MSG_A;
 message_t my_message;
 
 /* lists for decision handling */
-
+int msg_chain_check_in=-1;
 unsigned int received_id;
-int received_node=-1;
-int received_leaf;
+unsigned int re_received_id;
+int re_received_counter;
+float re_received_control_parameter;
+int re_received_node;
+
+unsigned int received_node;
+unsigned int received_leaf;
 float received_utility;
 float received_control_parameter;
-float received_counter;
-int utility_to_send;
+unsigned int received_counter;
+bool sem_talking=false;
+bool sem_talking_re=false;
 
 message_a *messages_list=NULL;
 quorum_a *quorum_list=NULL;
 message_a *chosen_message=NULL;
+
+bool start=false;
 
 float control_parameter=0;
 float gain_h=0;
@@ -190,25 +200,24 @@ float generate_gaussian_noise(float mu, float std_dev )
 
 bool bot_isin_node(tree_a **Node)
 {
-    if((gps_position.position_x >= (*Node)->tlX - .01 && gps_position.position_x <= (*Node)->brX + .01)&&(gps_position.position_y >= (*Node)->tlY - .01 && gps_position.position_y <= (*Node)->brY + .01)) return true;
+    if(((*Node)!=NULL)&&(gps_position.position_x >= (*Node)->tlX && gps_position.position_x <= (*Node)->brX)&&(gps_position.position_y >= (*Node)->tlY && gps_position.position_y <= (*Node)->brY)) return true;
     return false;
 }
 
 /*-------------------------------------------------------------------*/
 /* Send current kb status to the swarm                               */
 /*-------------------------------------------------------------------*/
-message_t *message_tx() {
-    
-    if (sending_msg){
-        return &my_message;
-    }
+message_t *message_tx()
+{    
+    if (sending_msg) return &my_message;
     return 0;
 }
 
 /*-------------------------------------------------------------------*/
 /* Callback function for successful transmission                     */
 /*-------------------------------------------------------------------*/
-void message_tx_success() {
+void message_tx_success()
+{
     sending_msg = false;
 }
 
@@ -219,9 +228,10 @@ void broadcast()
 {
     if (!sending_msg && kilo_ticks > last_broadcast_ticks + max_broadcast_ticks)
     {
+        int utility_to_send;
         sa_type=0;
         for (int i = 0; i < 9; ++i) my_message.data[i]=0;
-        switch (sending_type)
+        switch (sending_type)\
         {
             case MSG_A:
                 utility_to_send = (int)(last_sample_utility*100);
@@ -246,6 +256,59 @@ void broadcast()
         }
         my_message.crc = message_crc(&my_message);
         last_broadcast_ticks = kilo_ticks;
+        set_color(RGB(0,3,0));
+        sending_msg = true;
+    }
+}
+
+/*-------------------------------------------------------------------*/
+/* Function to broadcast a message                                        */
+/*-------------------------------------------------------------------*/
+void re_broadcast()
+{
+    if (!sending_msg && kilo_ticks > last_broadcast_ticks + max_broadcast_ticks)
+    {
+        int utility_to_send;
+        sa_type=0;
+        for (int i = 0; i < 9; ++i) my_message.data[i]=0;
+        switch (sending_type)
+        {
+            case MSG_A:
+                utility_to_send = (int)(received_utility*100);
+                re_received_id=received_id;
+                re_received_control_parameter=received_control_parameter;
+                re_received_node=received_node;
+                my_message.data[0] = received_id | sa_type<<7;
+                my_message.data[1] = (sa_type>>1)<<7 | utility_to_send>>3;
+                my_message.data[2] = (utility_to_send & 0b00000111)<<5 | (received_leaf-1)<<3;
+                sending_type=MSG_B;
+                break;
+            case MSG_B:
+                sa_type = sending_type;
+                re_received_counter= get_counter_from_id(&messages_list,re_received_id);
+                if(re_received_counter==-1)
+                {
+                    sending_type = MSG_A;
+                    sem_talking_re = false;
+                    return;
+                }
+                printf("%d__%d\n",kilo_uid,re_received_counter);
+                my_message.data[0] = re_received_id | sa_type<<7;
+                my_message.data[1] = (sa_type>>1)<<7 | ((uint8_t)(re_received_counter>>8) & 0b01111111);
+                my_message.data[2] = (uint8_t)re_received_counter;
+                sending_type = MSG_C;
+                break;
+            case MSG_C:
+                sa_type = sending_type;
+                my_message.data[0] = re_received_id | sa_type<<7;
+                my_message.data[1] = (sa_type>>1)<<7 |(int)(re_received_control_parameter*100);
+                my_message.data[2] = re_received_node;
+                sending_type = MSG_A;
+                break;
+        }
+        my_message.crc = message_crc(&my_message);
+        last_broadcast_ticks = kilo_ticks;
+        set_color(RGB(3,3,0));
         sending_msg = true;
     }
 }
@@ -257,6 +320,7 @@ void sample_and_decide(tree_a **leaf)
 {
     float random_sample = generate_gaussian_noise((*leaf)->gt_utility,NOISE);
     bottom_up_utility_update(&the_tree,(*leaf)->id,random_sample);
+    last_sensing_ticks = kilo_ticks;
     last_sample_utility = get_utility((*leaf)->node_filter);
     if(last_sample_utility > 10) last_sample_utility=10;
     else if(last_sample_utility < 0) last_sample_utility=0;
@@ -271,18 +335,16 @@ void sample_and_decide(tree_a **leaf)
 void select_new_point(bool force)
 {
     /* if the robot arrived to the destination, a new goal is selected and a noisy sample is taken from the correspective leaf*/
-    if (force || ((gps_position.position_x==goal_position.position_x) && (gps_position.position_y==goal_position.position_y)))
+    if (force || ((abs((int)((gps_position.position_x-goal_position.position_x)*100))*.01<.001) && (abs((int)((gps_position.position_y-goal_position.position_y)*100))*.01<.001)))
     {
         tree_a *leaf=NULL;
         if(force) set_color(RGB(0,0,0));
         else
         {
-            set_color(RGB(3,0,3));
             for(unsigned int l=0;l<leafs_size;l++)
             {
                 leaf = get_node(&the_tree,leafs_id[l]);
                 if(bot_isin_node(&leaf)) break;
-                leaf=NULL;
             }
             if(leaf==NULL)
             {
@@ -294,23 +356,25 @@ void select_new_point(bool force)
             else
             {
                 last_sample_id = get_id(&leaf);
-                last_sensing_ticks = kilo_ticks;
                 sample_and_decide(&leaf);
             }
         }
         lastWaypointTime = kilo_ticks;
         tree_a *actual_node = get_node(&the_tree,my_state.current_node);
-        float flag=abs(actual_node->brX-actual_node->tlX)*.25;
-        min_dist=abs(actual_node->brY-actual_node->tlY)*.25;
+        float flag;
+        flag=abs((int)((actual_node->brX-actual_node->tlX)*100))*.0025;
+        min_dist=abs((int)((actual_node->brY-actual_node->tlY)*100))*.0025;
         if(flag>min_dist) min_dist=flag;
         do {
             goal_position.position_x=(float)(random_in_range((int)((actual_node->tlX)*100),(int)((actual_node->brX)*100)))*.01;
             goal_position.position_y=(float)(random_in_range((int)((actual_node->tlY)*100),(int)((actual_node->brY)*100)))*.01;
-            if ( abs(gps_position.position_x-goal_position.position_x) >= min_dist || abs(gps_position.position_y-goal_position.position_y) >= min_dist ) break;
+            float dif_x,dif_y;
+            dif_x = abs((int)((gps_position.position_x-goal_position.position_x)*100))*.01;
+            dif_y = abs((int)((gps_position.position_y-goal_position.position_y)*100))*.01;
+            if (dif_x >= min_dist || dif_y >= min_dist ) break;
         } while(true);
 
     }
-    else set_color(RGB(0,0,0));
 }
 
 /*-------------------------------------------------------------------*/
@@ -342,16 +406,17 @@ void parse_smart_arena_message(uint8_t data[9], uint8_t kb_index)
 void update_messages()
 {
     // update buffer if the messages chain is valid
-    if(received_node>=0)
+    if(msg_chain_check_in>=0)
     {
-        received_node=-1;
-        printf("\n%d__%d\n",kilo_uid,received_id);
-        if(messages_list==NULL || is_fresh(&messages_list,received_id,received_counter))
+        int freshness;
+        freshness = is_fresh_message(&messages_list,received_id,received_node,received_leaf,received_counter,received_utility);
+        if(freshness>0)
         {
-            printf("FRESH\n\n");
-            add_a_message(&messages_list,received_id,received_node,received_leaf,received_counter,received_utility);
-            // rebroadcast
+            last_message_update_ticks = kilo_ticks;
+            if(freshness == 1) add_a_message(&messages_list,NULL,received_id,received_node,received_leaf,received_counter,received_utility,0);
+            min_time_to_repeat= TICKS_PER_SEC*((rand()%19)+1) ;
         }
+        msg_chain_check_in=-1;
     }
 }
 
@@ -369,31 +434,33 @@ void parse_kilo_message(uint8_t data[9])
     {
         case MSG_A:
             flag_id = data[0] & 0b01111111;
-            if(received_node==-1 && flag_id!=received_id)
+            if(msg_chain_check_in==-1 && flag_id!=received_id && flag_id!=kilo_uid)
             {
                 received_id = flag_id;
-                received_utility = sa_payload >> 5;
+                received_utility = (sa_payload >> 5)*.01;
                 received_leaf = (uint8_t)sa_payload & 0b00011111;
-                received_node = -2;
+                msg_chain_check_in = -2;
             }
             break;
         case MSG_B:
             flag_id = data[0] & 0b01111111;
-            if(received_node==-2 && flag_id==received_id)
+            if(msg_chain_check_in==-2 && flag_id==received_id)
             {
                 received_counter = sa_payload;
-                received_node = -3;
+                msg_chain_check_in = -3;
             }
-            else received_node = -1;
+            else msg_chain_check_in = -1;
             break;
         case MSG_C:
             flag_id = data[0] & 0b01111111;
-            if(received_node==-3 && flag_id==received_id)
+            if(msg_chain_check_in==-3 && flag_id==received_id)
             {
-                received_control_parameter = sa_payload >> 8;
-                received_node = (uint8_t)sa_payload;
+                received_counter=received_counter+1;
+                received_control_parameter = (sa_payload >> 8)*.01;
+                msg_chain_check_in = (uint8_t)sa_payload;
+                received_node = msg_chain_check_in;
             }
-            else received_node = -1;
+            else msg_chain_check_in = -1;
             break;
     }
     update_messages();
@@ -416,7 +483,7 @@ void parse_smart_arena_broadcast(uint8_t data[9])
             }
             break;
         case MSG_B:
-            if(!init_received_B)
+            if(!init_received_B && init_received_A)
             {   
                 float brX = (float)(data[0] & 0b01111111) * .1;
                 float brY = (float)(data[1] & 0b00011111) * .1;
@@ -425,14 +492,14 @@ void parse_smart_arena_broadcast(uint8_t data[9])
                 goal_position.position_x=offset_x;
                 goal_position.position_y=offset_y;
                 set_vertices(&the_tree,brX,brY);
-                int expiring_time = brX*100;
-                if(brY>brX) expiring_time=brY*100;
-                set_expiring_time_message(expiring_time*TICKS_PER_SEC*2);
+                int expiring_dist = brX*100;
+                if(brY>brX) expiring_dist=brY*100;
+                set_expiring_time_message(expiring_dist*TICKS_PER_SEC*1.5);
                 init_received_B=true;
             }
             break;
         case MSG_C:
-            if(!init_received_GPS_A)
+            if(!init_received_GPS_A && init_received_A && init_received_B)
             {
                 int id1 = data[0] & 0b01111111;
                 int id2 = data[3] & 0b01111111;
@@ -453,7 +520,7 @@ void parse_smart_arena_broadcast(uint8_t data[9])
             }
             break;
         case MSG_D:
-            if(!init_received_GPS_B)
+            if(!init_received_GPS_B && init_received_GPS_A && init_received_A && init_received_B)
             {
                 int id1 = data[0] & 0b01111111;
                 int id2 = data[3] & 0b01111111;
@@ -472,8 +539,8 @@ void parse_smart_arena_broadcast(uint8_t data[9])
                 }
                 init_received_GPS_B=true;
                 select_new_point(true);
-                set_color(RGB(0,0,0));
                 set_motion(FORWARD);
+                start = true;
             }
             break;
         case MSG_E:
@@ -555,6 +622,45 @@ int random_in_range(int min, int max
    return min + (rand()%(max-min));
 }
 
+/*-------------------------------------------------------------------*/
+/* Function implementing the uncorrelated random walk                */
+/*-------------------------------------------------------------------*/
+void random_walk(){
+    switch( current_motion_type ) {
+    case TURN_LEFT:
+        if( kilo_ticks > last_motion_ticks + turning_ticks ) {
+            /* start moving forward */
+            last_motion_ticks = kilo_ticks;  // fixed time FORWARD
+            set_motion(FORWARD);
+            straight_ticks = rand()%max_straight_ticks + 1;
+        }
+    case TURN_RIGHT:
+        if( kilo_ticks > last_motion_ticks + turning_ticks ) {
+            /* start moving forward */
+            last_motion_ticks = kilo_ticks;  // fixed time FORWARD
+            set_motion(FORWARD);
+            straight_ticks = rand()%max_straight_ticks + 1;
+        }
+        break;
+    case FORWARD:
+        if( kilo_ticks > last_motion_ticks + straight_ticks ) {
+            /* perform a radnom turn */
+            last_motion_ticks = kilo_ticks;
+            turning_ticks = rand()%max_turning_ticks + 1;
+            if( rand()%2 ) {
+                set_motion(TURN_LEFT);
+            }
+            else {
+                set_motion(TURN_RIGHT);
+            }
+        }
+        break;
+    case STOP:
+    default:
+        set_motion(STOP);
+    }
+}
+
 void random_way_point_model()
 {   
     if(gps_angle!=-1)
@@ -596,13 +702,16 @@ void random_way_point_model()
                 break;
             case FORWARD:
                 break;
-
             case STOP:
             default:
                 set_motion(STOP);
         }
     }
-    else set_motion(STOP);
+    else if(init_received_GPS_B)
+    {
+        set_motion(FORWARD);
+        random_walk();
+    }
 }
 
 /*-------------------------------------------------------------------*/
@@ -613,10 +722,13 @@ void setup()
     /* Initialise LED and motors */
     set_color(RGB(0,0,0));
     set_motors(0,0);
+
+    /* Initialise state and message type*/
     my_state.current_node=0;
     my_state.previous_node=0;
     my_state.commitment_node=0;
     my_message.type=KILO_BROADCAST_MSG;
+
     /* Initialise random seed */
     uint8_t seed = rand_hard();
     rand_seed(seed);
@@ -632,10 +744,33 @@ void setup()
 /* Main loop                                                         */
 /*-------------------------------------------------------------------*/
 void loop() {
-    erase_expired_messages(&my_message);
+    erase_expired_messages(&messages_list);
     random_way_point_model();
-    if(kilo_ticks < last_sensing_ticks + broadcasting_ticks) broadcast();
-    // if(kilo_ticks < last_message_update_ticks + broadcasting_ticks) re_broadcast();
+    if(kilo_ticks < last_sensing_ticks + broadcasting_ticks && !sem_talking_re)
+    {
+        sem_talking = true;
+        broadcast();
+    }
+    else
+    {
+        if(sem_talking_re && kilo_ticks < last_sensing_ticks + broadcasting_ticks) last_sensing_ticks = kilo_ticks;
+        if(!sem_talking_re && start) set_color(RGB(0,0,0));
+        sem_talking = false;
+    }
+    if( kilo_ticks >= last_message_update_ticks + min_time_to_repeat && kilo_ticks < last_message_update_ticks + min_time_to_repeat + broadcasting_ticks && !sem_talking)
+    {
+        sem_talking_re = true;
+        re_broadcast();
+    }
+    else
+    {
+        if(sem_talking && kilo_ticks < last_message_update_ticks + broadcasting_ticks) last_message_update_ticks = kilo_ticks;
+        if(!sem_talking && !sem_talking_re && start)
+        {
+            set_color(RGB(0,0,0));
+        }
+        sem_talking_re = false;
+    }
 }
 
 int main()

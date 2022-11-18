@@ -11,16 +11,8 @@
 #ifndef BESTN_ALF_H
 #define BESTN_ALF_H
 
-namespace argos {
-class CSpace;
-class CFloorEntity;
-class CSimulator;
-}
-
-#include "floor.h"
 #include <argos3/plugins/robots/kilobot/simulator/ALF.h>
-
-using namespace argos;
+#include "hierarchicFloor.h"
 
 class CBestN_ALF : public CALF
 {
@@ -64,6 +56,8 @@ public:
     void SendInformationGPS_A(CKilobotEntity &c_kilobot_entity, const int Type);
     void SendInformationGPS_B(CKilobotEntity &c_kilobot_entity, const int Type);
 
+    Real abs_distance(CVector2 a,CVector2 b);
+
 private:
 
     /************************************/
@@ -73,7 +67,7 @@ private:
     int depth,branches;
     float k;
     CVector2 TL,BR;
-    hierarchicFloor *v_floor;
+    ChierarchicFloor *vh_floor;
 
     typedef struct
     {
@@ -81,12 +75,14 @@ private:
     } SRobotNodes;
 
     std::vector<SRobotNodes> m_vecKilobotNodes;
+    std::vector<CVector2> m_vecKilobotPositions;
+    std::vector<CVector2> m_vecKilobotOldPositions;
     std::vector<Real> m_vecLastTimeMessaged;
     std::vector<int> m_vecStart_experiment;
     std::vector<int> m_vecGpsData;
     bool start_experiment = false;
     Real m_fMinTimeBetweenTwoMsg;
-
+    std::vector<bool> m_vecMessageToSend;
     /* Number of GPS cells */
     UInt16 m_unGpsCells;
 

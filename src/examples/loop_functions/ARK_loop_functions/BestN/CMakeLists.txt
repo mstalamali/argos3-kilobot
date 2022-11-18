@@ -5,8 +5,8 @@ add_library(ALF_BestN_loop_function MODULE
   BestN_ALF.cpp
   node.h
   node.cpp
-  floor.h
-  floor.cpp
+  hierarchicFloor.h
+  hierarchicFloor.cpp
 )
 
 target_link_libraries(ALF_BestN_loop_function

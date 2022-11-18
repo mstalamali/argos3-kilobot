@@ -1,5 +1,5 @@
 /**
- * @file <floor.h>
+ * @file <hierarchicFloor.h>
  *
  * @author Fabio Oddi <fabio.oddi@uniroma1.it>
  */
@@ -8,7 +8,7 @@
 #define HIERARCHICFLOOR_H
 #include "node.h"
 
-class hierarchicFloor
+class ChierarchicFloor
 {
     private:
         Node *root=NULL;
@@ -28,11 +28,11 @@ class hierarchicFloor
         std::default_random_engine generator;
 
     public:
-        hierarchicFloor();
+        ChierarchicFloor();
 
-        hierarchicFloor(const CVector2 Tl,const CVector2 Br,const int SwarmSize,const int Depth,const int Branches,const float Utility,const float K,const float Noise,const float Offsetx,const float Offset);
+        ChierarchicFloor(const CVector2 Tl,const CVector2 Br,const int SwarmSize,const int Depth,const int Branches,const float Utility,const float K,const float Noise,const float Offsetx,const float Offset);
 
-        ~hierarchicFloor();
+        ~ChierarchicFloor();
         
         void complete_tree();
 

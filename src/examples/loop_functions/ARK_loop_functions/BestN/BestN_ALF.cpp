@@ -58,9 +58,10 @@ void CBestN_ALF::SetupInitialKilobotStates() {
     m_vecStart_experiment.resize(m_tKilobotEntities.size());
     m_vecGpsData.resize(m_tKilobotEntities.size());
     m_vecKilobotNodes.resize(m_tKilobotEntities.size());
+    m_vecKilobotPositions.resize(m_tKilobotEntities.size());
     m_fMinTimeBetweenTwoMsg = Max<Real>(1.0, m_tKilobotEntities.size() * m_fTimeForAMessage / 3.0);
     /* Create the virtual hierarchic environment over the arena */
-    v_floor = new hierarchicFloor(TL,BR,m_tKilobotEntities.size(),depth,branches,10,k,1,this->GetSpace().GetArenaLimits().GetMax()[0],this->GetSpace().GetArenaLimits().GetMax()[1]);
+    vh_floor = new ChierarchicFloor(TL,BR,m_tKilobotEntities.size(),depth,branches,10,k,1,this->GetSpace().GetArenaLimits().GetMax()[0],this->GetSpace().GetArenaLimits().GetMax()[1]);
     for(UInt16 it=0;it< m_tKilobotEntities.size();it++){
         /* Setup the virtual states of a kilobot */
         SetupInitialKilobotState(*m_tKilobotEntities[it]);
@@ -113,6 +114,7 @@ void CBestN_ALF::GetExperimentVariables(TConfigurationNode& t_tree){
 
 void CBestN_ALF::UpdateKilobotState(CKilobotEntity &c_kilobot_entity){
     UInt16 unKilobotID = GetKilobotId(c_kilobot_entity);
+    m_vecKilobotPositions[unKilobotID] = GetKilobotPosition(c_kilobot_entity);
 }
 
 /****************************************/
@@ -122,30 +124,30 @@ void CBestN_ALF::UpdateVirtualSensor(CKilobotEntity &c_kilobot_entity){
 
     /* Get the kilobot ID */
     UInt16 unKilobotID=GetKilobotId(c_kilobot_entity);
-    /* check if enough time has passed from the last message otherwise*/
-    if (m_fTimeInSeconds - m_vecLastTimeMessaged[unKilobotID]< m_fMinTimeBetweenTwoMsg){
-        return; // if the time is too short, the kilobot cannot receive a message
-    }
-    /* clear all the variables used for messaging*/
-    for (int i = 0; i < 9; ++i) m_tMessages[unKilobotID].data[i]=0;
     if(!start_experiment)
     {
+        if (m_fTimeInSeconds - m_vecLastTimeMessaged[unKilobotID]< m_fMinTimeBetweenTwoMsg) return; // if the time is too short, the kilobot cannot receive a message
+        for (int i = 0; i < 9; ++i) m_tMessages[unKilobotID].data[i]=0; // clear all the variables used for messaging
         /* Send init information for environment representation*/
         switch (m_vecStart_experiment[unKilobotID])
         {
         case 0:
+            m_vecLastTimeMessaged[unKilobotID]=m_fTimeInSeconds;
             m_vecStart_experiment[unKilobotID]=1;
             SendStructInitInformationA(c_kilobot_entity);
             break;
         case 1:
+            m_vecLastTimeMessaged[unKilobotID]=m_fTimeInSeconds;
             m_vecStart_experiment[unKilobotID]=2;
             SendStructInitInformationB(c_kilobot_entity);
             break;
         case 2:
+            m_vecLastTimeMessaged[unKilobotID]=m_fTimeInSeconds;
             m_vecStart_experiment[unKilobotID]=3;
             SendInformationGPS_A(c_kilobot_entity,0);
             break;
         case 3:
+            m_vecLastTimeMessaged[unKilobotID]=m_fTimeInSeconds;
             m_vecStart_experiment[unKilobotID]=4;
             SendInformationGPS_B(c_kilobot_entity,0);
             break;
@@ -162,13 +164,17 @@ void CBestN_ALF::UpdateVirtualSensor(CKilobotEntity &c_kilobot_entity){
     }
     else
     {
+        if (m_fTimeInSeconds - m_vecLastTimeMessaged[unKilobotID]< m_fMinTimeBetweenTwoMsg*2) return; // if the time is too short, the kilobot cannot receive a message
+        for (int i = 0; i < 9; ++i) m_tMessages[unKilobotID].data[i]=0; // clear all the variables used for messaging
         switch (m_vecGpsData[unKilobotID])
         {
             case 0:
+                m_vecLastTimeMessaged[unKilobotID]=m_fTimeInSeconds;
                 m_vecGpsData[unKilobotID]=1;
                 SendInformationGPS_A(c_kilobot_entity,1);
                 break;
             case 1:
+                m_vecLastTimeMessaged[unKilobotID]=m_fTimeInSeconds;
                 m_vecGpsData[unKilobotID]=0;
                 SendInformationGPS_B(c_kilobot_entity,1);
                 break;
@@ -192,7 +198,7 @@ void CBestN_ALF::SendStructInitInformationA(CKilobotEntity &c_kilobot_entity)
     tKilobotMessage.m_sType=0;
     tKilobotMessage.m_sID = ((int)(k*100))<<2;
     tKilobotMessage.m_sID = tKilobotMessage.m_sID | (branches-1);
-    tKilobotMessage.m_sData = (v_floor->get_best_leaf()->get_id()-1)<<2;
+    tKilobotMessage.m_sData = (vh_floor->get_best_leaf()->get_id()-1)<<2;
     tKilobotMessage.m_sData = tKilobotMessage.m_sData | (depth-1);
     // Fill the kilobot message by the ARK-type messages
     m_tMessages[unKilobotID].data[0] = tKilobotMessage.m_sID>>2 | ((UInt8)(tKilobotMessage.m_sType & 0b0100))<<5;
@@ -237,8 +243,8 @@ void CBestN_ALF::SendInformationGPS_A(CKilobotEntity &c_kilobot_entity, const in
     m_tALFKilobotMessage tKilobotMessage,tEmptyMessage,tMessage;
     m_tMessages[unKilobotID].type=Type;
     tKilobotMessage.m_sType=2;
-    UInt8 valX=(int)((cKilobotPosition.GetX()+*(v_floor->get_offset_x()))*100);
-    UInt8 valY=(int)((cKilobotPosition.GetY()+*(v_floor->get_offset_y()))*100);
+    UInt8 valX=(int)((cKilobotPosition.GetX()+*(vh_floor->get_offset_x()))*100);
+    UInt8 valY=(int)((cKilobotPosition.GetY()+*(vh_floor->get_offset_y()))*100);
     tKilobotMessage.m_sID = unKilobotID<<3 | valX>>4;
     tKilobotMessage.m_sData = ((UInt16)valX)<<6;    
     tKilobotMessage.m_sData = tKilobotMessage.m_sData | (valY>>1);
@@ -299,9 +305,12 @@ void CBestN_ALF::SendInformationGPS_B(CKilobotEntity &c_kilobot_entity, const in
 /****************************************/
 
 CColor CBestN_ALF::GetFloorColor(const CVector2 &vec_position_on_plane) {
-    CColor cColor=CColor::WHITE;
-    
-    return cColor;
+    CColor color=CColor::BLUE;
+    if(vec_position_on_plane.GetX()<=m_vecKilobotPositions[0].GetX() && vec_position_on_plane.GetY()<=m_vecKilobotPositions[0].GetY())
+    {
+        color=CColor::RED;
+    }
+    return color;
 }
 
 REGISTER_LOOP_FUNCTIONS(CBestN_ALF, "ALF_BestN_loop_function")

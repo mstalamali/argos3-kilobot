@@ -1,7 +1,7 @@
 #ifndef QUORUM_STRCUCT_H
 #define QUORUM_STRCUCT_H
 
-int expiring_time_quorum=11;
+int expiring_time_quorum=20000;
 
 typedef struct quorum_structure
 {
@@ -42,55 +42,50 @@ void add_an_item(quorum_a **myquorum,const int Agent_id,const int Agent_node)
 
 void erase_expired_items(quorum_a **myquorum)
 {
-    quorum_a *current_item=(*myquorum);
-    if(current_item->counter >= expiring_time_quorum)
+    if((*myquorum!=NULL))
     {
-        if(current_item->prev==NULL)
+        (*myquorum)->counter++;
+        if((*myquorum)->counter >= expiring_time_messages)
         {
-            (*myquorum)=current_item->next;
-            current_item->next=NULL;
-            free(current_item);
-            current_item=(*myquorum);
+            if((*myquorum)->next == NULL && (*myquorum)->prev == NULL) free(*myquorum);
+            else if((*myquorum)->next == NULL)
+            {
+                (*myquorum)->prev->next=NULL;
+                (*myquorum)->prev = NULL;
+                free(*myquorum);
+            }
+            else if((*myquorum)->prev == NULL)
+            {
+                quorum_a *flag = (*myquorum)->next;
+                (*myquorum)->next->prev = NULL;
+                (*myquorum)->next = NULL;
+                free(*myquorum);
+                *myquorum = flag;
+            }
+            else
+            {
+                (*myquorum)->prev->next=(*myquorum)->next;
+                (*myquorum)->next->prev=(*myquorum)->prev;
+                free(*myquorum);
+            }
         }
-        else if(current_item->next==NULL)
-        {
-            current_item->prev=NULL;
-            free(current_item);
-            current_item=NULL;
-        }
-        else
-        {
-            quorum_a *prev_item=current_item->prev;
-            quorum_a *next_item=current_item->next;
-            prev_item->next=next_item;
-            next_item->prev=prev_item;
-            current_item->prev=NULL;
-            current_item->next=NULL;
-            free(current_item);
-            current_item=next_item;
-        }
+        erase_expired_messages(&(*myquorum)->next);
     }
-    else current_item=current_item->next;
-    if(current_item!=NULL) erase_expired_items(&current_item);
-}
-
-void increment_counter_quorum(quorum_a **myquorum)
-{
-    (*myquorum)->counter++;
-    quorum_a *q=(*myquorum)->next;
-    if (q!=NULL) increment_counter_quorum(&q);
 }
 
 void erase_quorum_list(quorum_a **myquorum)
-{   
-    quorum_a *q=(*myquorum)->next;
-    if(q!=NULL)
+{
+    if((*myquorum!=NULL))
     {
-        erase_quorum_list(&q);
-        q=NULL;
+        if((*myquorum)->next!=NULL)
+        {
+            quorum_a *q=(*myquorum)->next;
+            erase_quorum_list(&q);
+            (*myquorum)->next=NULL;
+        }
+        (*myquorum)->prev=NULL;
+        free(*myquorum);
     }
-    (*myquorum)->prev=NULL;
-    free((*myquorum));
 }
 
 #endif
