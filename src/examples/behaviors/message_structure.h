@@ -16,53 +16,39 @@ void set_expiring_time_message(const int Expiring_time)
     expiring_time_messages=Expiring_time;
 }
 
-void add_a_message(message_a **Mymessage,message_a **Prev,const int Agent_id,const int Agent_node, const int Agent_leaf, const int Counter, const float Leaf_utility, int adding_to_bottom )
+void add_a_message(message_a **Mymessage,message_a **Prev,const int Agent_id,const int Agent_node, const int Agent_leaf, const int Counter, const float Leaf_utility)
 {
-    if(adding_to_bottom==0)
+    if((*Mymessage)==NULL)
     {
-        if((*Mymessage)==NULL)
-        {
-            (*Mymessage)=(message_a*)malloc(sizeof(message_a));
-            (*Mymessage)->agent_id=Agent_id;
-            (*Mymessage)->agent_node=Agent_node;
-            (*Mymessage)->agent_leaf=Agent_leaf;
-            (*Mymessage)->counter=Counter;
-            (*Mymessage)->leaf_utility=Leaf_utility;
-            (*Mymessage)->prev=NULL;
-            (*Mymessage)->next=NULL;
-        }
-        else
-        {
-            message_a *flag = (*Mymessage)->next;
-            add_a_message(&flag,&(*Mymessage),Agent_id,Agent_node,Agent_leaf,Counter,Leaf_utility,1);
-        }
+        (*Mymessage)=(message_a*)malloc(sizeof(message_a));
+        (*Mymessage)->agent_id=Agent_id;
+        (*Mymessage)->agent_node=Agent_node;
+        (*Mymessage)->agent_leaf=Agent_leaf;
+        (*Mymessage)->counter=Counter;
+        (*Mymessage)->leaf_utility=Leaf_utility;
+        (*Mymessage)->prev=&Prev;
+        if (Prev!=NULL) (*Prev)->next=*Mymessage;
+        (*Mymessage)->next=NULL;
     }
     else
     {
-        if((*Mymessage)==NULL)
-        {
-            (*Mymessage)=(message_a*)malloc(sizeof(message_a));
-            (*Mymessage)->agent_id=Agent_id;
-            (*Mymessage)->agent_node=Agent_node;
-            (*Mymessage)->agent_leaf=Agent_leaf;
-            (*Mymessage)->counter=Counter;
-            (*Mymessage)->leaf_utility=Leaf_utility;
-            (*Mymessage)->prev=Prev;
-            (*Mymessage)->next=NULL;
-        }
-        else
-        {
-            message_a *flag = (*Mymessage)->next;
-            add_a_message(&flag,&(*Mymessage),Agent_id,Agent_node,Agent_leaf,Counter,Leaf_utility,1);
-        }
+        message_a *flag = (*Mymessage)->next;
+        add_a_message(&flag,Mymessage,Agent_id,Agent_node,Agent_leaf,Counter,Leaf_utility);
     }
 }
 
-void erase_expired_messages(message_a **Mymessage)
+void increment_messages_counter(message_a **Mymessage)
 {
     if((*Mymessage)!=NULL)
     {
         (*Mymessage)->counter=(*Mymessage)->counter+1;
+        increment_messages_counter(&((*Mymessage)->next));
+    }
+}
+void erase_expired_messages(message_a **Mymessage)
+{
+    if((*Mymessage)!=NULL)
+    {
         if((*Mymessage)->counter >= expiring_time_messages)
         {
             if((*Mymessage)->next == NULL && (*Mymessage)->prev == NULL) free(*Mymessage);
@@ -87,7 +73,7 @@ void erase_expired_messages(message_a **Mymessage)
                 free(*Mymessage);
             }
         }
-        erase_expired_messages(&(*Mymessage)->next);
+        erase_expired_messages(&((*Mymessage)->next));
     }
 }
 

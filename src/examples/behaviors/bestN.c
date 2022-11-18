@@ -100,11 +100,11 @@ tree_a *the_tree=NULL;
 /* counters for broadcast a message */
 const uint16_t max_broadcast_ticks = 3;
 const uint16_t words_4_a_message = 3;
+const uint16_t ticks_for_a_chain=max_broadcast_ticks*(words_4_a_message*2);
 uint32_t last_broadcast_ticks = 0;
-const uint16_t broadcasting_ticks = max_broadcast_ticks*(words_4_a_message+1)*100;
+const uint16_t broadcasting_ticks = ticks_for_a_chain*50;
 unsigned int last_sensing_ticks=-broadcasting_ticks;
-unsigned int last_message_update_ticks=-broadcasting_ticks;
-unsigned int min_time_to_repeat;
+unsigned int chain_timeout=0;
 
 /* Flag for decision to send a word */
 bool sending_msg = false;
@@ -114,10 +114,7 @@ message_t my_message;
 /* lists for decision handling */
 int msg_chain_check_in=-1;
 unsigned int received_id;
-unsigned int re_received_id;
-int re_received_counter;
-float re_received_control_parameter;
-int re_received_node;
+unsigned int broadcast_counter=0;
 
 unsigned int received_node;
 unsigned int received_leaf;
@@ -132,6 +129,7 @@ quorum_a *quorum_list=NULL;
 message_a *chosen_message=NULL;
 
 bool start=false;
+bool start_chain=false;
 
 float control_parameter=0;
 float gain_h=0;
@@ -244,6 +242,7 @@ void broadcast()
                 sa_type = sending_type;
                 my_message.data[0] = kilo_uid | sa_type<<7;
                 my_message.data[1] = (sa_type>>1)<<7;
+                my_message.data[2] = broadcast_counter;
                 sending_type = MSG_C;
                 break;
             case MSG_C:
@@ -251,58 +250,6 @@ void broadcast()
                 my_message.data[0] = kilo_uid | sa_type<<7;
                 my_message.data[1] = (sa_type>>1)<<7 |(int)(control_parameter*100);
                 my_message.data[2] = my_state.current_node;
-                sending_type = MSG_A;
-                break;
-        }
-        my_message.crc = message_crc(&my_message);
-        last_broadcast_ticks = kilo_ticks;
-        set_color(RGB(0,3,0));
-        sending_msg = true;
-    }
-}
-
-/*-------------------------------------------------------------------*/
-/* Function to broadcast a message                                        */
-/*-------------------------------------------------------------------*/
-void re_broadcast()
-{
-    if (!sending_msg && kilo_ticks > last_broadcast_ticks + max_broadcast_ticks)
-    {
-        int utility_to_send;
-        sa_type=0;
-        for (int i = 0; i < 9; ++i) my_message.data[i]=0;
-        switch (sending_type)
-        {
-            case MSG_A:
-                utility_to_send = (int)(received_utility*100);
-                re_received_id=received_id;
-                re_received_control_parameter=received_control_parameter;
-                re_received_node=received_node;
-                my_message.data[0] = received_id | sa_type<<7;
-                my_message.data[1] = (sa_type>>1)<<7 | utility_to_send>>3;
-                my_message.data[2] = (utility_to_send & 0b00000111)<<5 | (received_leaf-1)<<3;
-                sending_type=MSG_B;
-                break;
-            case MSG_B:
-                sa_type = sending_type;
-                re_received_counter= get_counter_from_id(&messages_list,re_received_id);
-                if(re_received_counter==-1)
-                {
-                    sending_type = MSG_A;
-                    sem_talking_re = false;
-                    return;
-                }
-                printf("%d__%d\n",kilo_uid,re_received_counter);
-                my_message.data[0] = re_received_id | sa_type<<7;
-                my_message.data[1] = (sa_type>>1)<<7 | ((uint8_t)(re_received_counter>>8) & 0b01111111);
-                my_message.data[2] = (uint8_t)re_received_counter;
-                sending_type = MSG_C;
-                break;
-            case MSG_C:
-                sa_type = sending_type;
-                my_message.data[0] = re_received_id | sa_type<<7;
-                my_message.data[1] = (sa_type>>1)<<7 |(int)(re_received_control_parameter*100);
-                my_message.data[2] = re_received_node;
                 sending_type = MSG_A;
                 break;
         }
@@ -412,9 +359,8 @@ void update_messages()
         freshness = is_fresh_message(&messages_list,received_id,received_node,received_leaf,received_counter,received_utility);
         if(freshness>0)
         {
-            last_message_update_ticks = kilo_ticks;
-            if(freshness == 1) add_a_message(&messages_list,NULL,received_id,received_node,received_leaf,received_counter,received_utility,0);
-            min_time_to_repeat= TICKS_PER_SEC*((rand()%19)+1) ;
+            if(freshness == 1) add_a_message(&messages_list,NULL,received_id,received_node,received_leaf,received_counter,received_utility);
+            printf("%d__%d+\n\n",kilo_uid,received_id);
         }
         msg_chain_check_in=-1;
     }
@@ -436,6 +382,8 @@ void parse_kilo_message(uint8_t data[9])
             flag_id = data[0] & 0b01111111;
             if(msg_chain_check_in==-1 && flag_id!=received_id && flag_id!=kilo_uid)
             {
+                start_chain=true;
+                chain_timeout=kilo_ticks;
                 received_id = flag_id;
                 received_utility = (sa_payload >> 5)*.01;
                 received_leaf = (uint8_t)sa_payload & 0b00011111;
@@ -449,7 +397,10 @@ void parse_kilo_message(uint8_t data[9])
                 received_counter = sa_payload;
                 msg_chain_check_in = -3;
             }
-            else msg_chain_check_in = -1;
+            else
+            {
+                msg_chain_check_in = -2;
+            }
             break;
         case MSG_C:
             flag_id = data[0] & 0b01111111;
@@ -459,8 +410,12 @@ void parse_kilo_message(uint8_t data[9])
                 received_control_parameter = (sa_payload >> 8)*.01;
                 msg_chain_check_in = (uint8_t)sa_payload;
                 received_node = msg_chain_check_in;
+                start_chain=false;
             }
-            else msg_chain_check_in = -1;
+            else
+            {
+                msg_chain_check_in = -3;
+            }
             break;
     }
     update_messages();
@@ -744,33 +699,27 @@ void setup()
 /* Main loop                                                         */
 /*-------------------------------------------------------------------*/
 void loop() {
-    erase_expired_messages(&messages_list);
+    increment_messages_counter(&messages_list);
+    // erase_expired_messages(&messages_list);
     random_way_point_model();
-    if(kilo_ticks < last_sensing_ticks + broadcasting_ticks && !sem_talking_re)
+    if(kilo_ticks < last_sensing_ticks + broadcasting_ticks)
     {
         sem_talking = true;
         broadcast();
+        broadcast_counter=broadcast_counter+1;
     }
     else
     {
-        if(sem_talking_re && kilo_ticks < last_sensing_ticks + broadcasting_ticks) last_sensing_ticks = kilo_ticks;
-        if(!sem_talking_re && start) set_color(RGB(0,0,0));
+        broadcast_counter=0;
+        if(start) set_color(RGB(0,0,0));
         sem_talking = false;
     }
-    if( kilo_ticks >= last_message_update_ticks + min_time_to_repeat && kilo_ticks < last_message_update_ticks + min_time_to_repeat + broadcasting_ticks && !sem_talking)
+    if(kilo_ticks>chain_timeout + 3*ticks_for_a_chain && msg_chain_check_in<-1)
     {
-        sem_talking_re = true;
-        re_broadcast();
+        start_chain=false;
+        msg_chain_check_in = -1;
     }
-    else
-    {
-        if(sem_talking && kilo_ticks < last_message_update_ticks + broadcasting_ticks) last_message_update_ticks = kilo_ticks;
-        if(!sem_talking && !sem_talking_re && start)
-        {
-            set_color(RGB(0,0,0));
-        }
-        sem_talking_re = false;
-    }
+    if(start_chain) set_color(RGB(3,0,3));
 }
 
 int main()

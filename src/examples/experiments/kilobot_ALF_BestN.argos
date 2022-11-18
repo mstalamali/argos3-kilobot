@@ -66,7 +66,7 @@
     <!-- *********************** -->
     <!-- * Arena configuration * -->
     <!-- *********************** -->
-    <arena size="1, 1, 1" center="0,0,0">
+    <!--<arena size="1, 1, 1" center="0,0,0">
         
         <box id="wall_north" size="1,0.01,0.1" movable="false">
             <body position="0,.5,0" orientation="0,0,0" />
@@ -90,7 +90,33 @@
                     <controller config="bestN"/> <dynamics2d friction="0.7" />
                 </kilobot>
             </entity>
-        </distribute>  
+        </distribute>-->
+
+    <arena size=".5, .5, 1" center="0,0,0">
+
+        <box id="wall_north" size=".5,0.01,0.1" movable="false">
+            <body position="0,.25,0" orientation="0,0,0" />
+        </box>
+        <box id="wall_south" size=".5,0.01,0.1" movable="false">
+            <body position="0,-.25,0" orientation="0,0,0" />
+        </box>
+        <box id="wall_east" size="0.01,.5,0.1"  movable="false">
+            <body position=".25,0,0" orientation="0,0,0" />
+        </box>
+        <box id="wall_west" size="0.01,.5,0.1"  movable="false">
+            <body position="-.25,0,0" orientation="0,0,0" />
+        </box>
+
+
+        <distribute>
+            <position method="uniform" min="-.25,-0.25,0" max="0.25,0.25,0" />
+            <orientation method="uniform" min="0,0,0" max="360,0,0" />
+            <entity quantity="10" max_trials="200">
+                <kilobot id="kb">
+                    <controller config="bestN"/> <dynamics2d friction="0.7" />
+                </kilobot>
+            </entity>
+        </distribute> 
 
         <floor id="floor"
         source="loop_functions"
