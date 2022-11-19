@@ -24,14 +24,14 @@ Node::~Node()
     delete [] parent;
 }
 
-void Node::set_parent(Node *Parent)
+void Node::set_parent(Node **Parent)
 {
-    parent = Parent;
+    parent = *Parent;
 }
 
-void Node::add_child(Node *Child)
+void Node::add_child(Node **Child)
 {
-    children.push_back(Child);
+    children.push_back(*Child);
 }
 
 void Node::set_distance_from_opt(const int Distance)

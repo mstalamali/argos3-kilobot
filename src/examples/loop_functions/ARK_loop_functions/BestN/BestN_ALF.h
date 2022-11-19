@@ -56,7 +56,7 @@ public:
     void SendInformationGPS_A(CKilobotEntity &c_kilobot_entity, const int Type);
     void SendInformationGPS_B(CKilobotEntity &c_kilobot_entity, const int Type);
 
-    Real abs_distance(CVector2 a,CVector2 b);
+    Real abs_distance(const CVector2 a,const CVector2 b);
 
 private:
 

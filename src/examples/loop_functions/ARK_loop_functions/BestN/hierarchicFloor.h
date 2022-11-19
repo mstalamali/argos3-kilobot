@@ -36,23 +36,21 @@ class ChierarchicFloor
         
         void complete_tree();
 
-        void complete_tree(Node *ToComplete,const int Deep);
+        void complete_tree(Node **ToComplete,const int Deep);
 
         void assign_random_MAXutility();
 
-        void bottom_up_utility_update(Node *Start_node);
+        void bottom_up_utility_update(Node **Start_node);
 
-        void set_distances_from_opt_node(Node *Start_node,const int Distance);
+        void set_distances_from_opt_node(Node **Start_node,const int Distance);
 
         void set_vertices();
         
-        void loop_set_vertices(Node *Start_node,const int Index,const int Ref);
+        void loop_set_vertices(Node **Start_node,const int Index,const int Ref);
 
-        void set_vertices_and_kernel();
+        void adjust_vertices(Node **Start_node);
 
-        void adjust_vertices(Node *Start_node);
-
-        std::vector<Node *> get_leafs_from_node(Node *Start_node);
+        std::vector<Node *> get_leafs_from_node(Node **Start_node);
         
         std::vector<Node *> get_leafs();
 
@@ -64,7 +62,7 @@ class ChierarchicFloor
 
         Node* get_node(const int Id);
 
-        Node* get_node(Node *Start_node,const int Id);
+        Node* get_node(Node **Start_node,const int Id);
 
         Node* get_leaf_from_position(CVector2 Position);
 

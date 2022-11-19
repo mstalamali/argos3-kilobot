@@ -339,7 +339,7 @@ void parse_smart_arena_message(uint8_t data[9], uint8_t kb_index)
             gps_position.position_x = (sa_payload >> 7) * .01;
             gps_position.position_y = ((uint8_t)sa_payload & 0b01111111) * .01;
             gps_angle=-1;
-            // printf("%d_____%f_%f___%f_%f\n",kilo_uid,gps_position.position_x,gps_position.position_y,goal_position.position_x,goal_position.position_y);
+            if(kilo_uid==0)printf("%f_%f\n",gps_position.position_y,gps_position.position_x);
             break;
         case MSG_D:
             gps_angle = (((uint8_t)sa_payload) * .1) * 30;
@@ -360,7 +360,7 @@ void update_messages()
         if(freshness>0)
         {
             if(freshness == 1) add_a_message(&messages_list,NULL,received_id,received_node,received_leaf,received_counter,received_utility);
-            printf("%d__%d+\n\n",kilo_uid,received_id);
+            // printf("%d__%d+\n\n",kilo_uid,received_id);
         }
         msg_chain_check_in=-1;
     }
@@ -440,7 +440,7 @@ void parse_smart_arena_broadcast(uint8_t data[9])
         case MSG_B:
             if(!init_received_B && init_received_A)
             {   
-                float brX = (float)(data[0] & 0b01111111) * .1;
+                float brX = (float)(data[0] & 0b00011111) * .1;
                 float brY = (float)(data[1] & 0b00011111) * .1;
                 offset_x=brX/2;
                 offset_y=brY/2;
@@ -563,11 +563,10 @@ void NormalizeAngle(int* angle)
     while(*angle<-180){
         *angle=*angle+360;
     }
-    *angle=*angle*-1;
 }
 int AngleToGoal()
 {
-    int angletogoal=(atan2(goal_position.position_y-gps_position.position_y,goal_position.position_x-gps_position.position_x)/PI)*180 - (gps_angle - 180);
+    int angletogoal=(atan2(gps_position.position_y-goal_position.position_y,gps_position.position_x-goal_position.position_x)/PI)*180 - (gps_angle - 180);
     NormalizeAngle(&angletogoal);
     return angletogoal;
 }

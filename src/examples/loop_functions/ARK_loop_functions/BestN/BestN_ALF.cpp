@@ -115,6 +115,7 @@ void CBestN_ALF::GetExperimentVariables(TConfigurationNode& t_tree){
 void CBestN_ALF::UpdateKilobotState(CKilobotEntity &c_kilobot_entity){
     UInt16 unKilobotID = GetKilobotId(c_kilobot_entity);
     m_vecKilobotPositions[unKilobotID] = GetKilobotPosition(c_kilobot_entity);
+    if(unKilobotID==0) std::cout<<m_vecKilobotPositions[unKilobotID]<<"\n";
 }
 
 /****************************************/
@@ -238,7 +239,7 @@ void CBestN_ALF::SendInformationGPS_A(CKilobotEntity &c_kilobot_entity, const in
 {
     /* Get the kilobot ID */
     UInt16 unKilobotID=GetKilobotId(c_kilobot_entity);
-    CVector2 cKilobotPosition = GetKilobotPosition(c_kilobot_entity);
+    CVector2 cKilobotPosition = m_vecKilobotPositions[unKilobotID];
     /* Create ARK-type messages variables */
     m_tALFKilobotMessage tKilobotMessage,tEmptyMessage,tMessage;
     m_tMessages[unKilobotID].type=Type;
@@ -303,12 +304,62 @@ void CBestN_ALF::SendInformationGPS_B(CKilobotEntity &c_kilobot_entity, const in
 
 /****************************************/
 /****************************************/
+Real CBestN_ALF::abs_distance(const CVector2 a, const CVector2 b)
+{
+    Real x=a.GetX()-b.GetX();
+    x = x*x;
+    Real y=a.GetY()-b.GetY();
+    y = y*y;
+    return sqrt(x+y);
+}
+/****************************************/
+/****************************************/
 
 CColor CBestN_ALF::GetFloorColor(const CVector2 &vec_position_on_plane) {
-    CColor color=CColor::BLUE;
-    if(vec_position_on_plane.GetX()<=m_vecKilobotPositions[0].GetX() && vec_position_on_plane.GetY()<=m_vecKilobotPositions[0].GetY())
+    CColor color=CColor::WHITE;
+    if(abs_distance(vec_position_on_plane,m_vecKilobotPositions[0])<0.03)
     {
-        color=CColor::RED;
+        color=CColor::WHITE;
+    }
+    if(vec_position_on_plane.GetX()<vh_floor->get_leafs()[0]->get_bottom_right_angle().GetX() && vec_position_on_plane.GetX()>vh_floor->get_leafs()[0]->get_top_left_angle().GetX())
+    {
+        if(vec_position_on_plane.GetY()<vh_floor->get_leafs()[0]->get_bottom_right_angle().GetY() && vec_position_on_plane.GetY()>vh_floor->get_leafs()[0]->get_top_left_angle().GetY())
+        {
+            if(vh_floor->get_leafs()[0]->get_id()==2) color=CColor::RED;
+            if(vh_floor->get_leafs()[0]->get_id()==3) color=CColor::BLUE;
+            if(vh_floor->get_leafs()[0]->get_id()==5) color=CColor::GREEN;
+            if(vh_floor->get_leafs()[0]->get_id()==6) color=CColor::YELLOW;
+        }
+    }
+    if(vec_position_on_plane.GetX()<vh_floor->get_leafs()[1]->get_bottom_right_angle().GetX() && vec_position_on_plane.GetX()>vh_floor->get_leafs()[1]->get_top_left_angle().GetX())
+    {
+        if(vec_position_on_plane.GetY()<vh_floor->get_leafs()[1]->get_bottom_right_angle().GetY() && vec_position_on_plane.GetY()>vh_floor->get_leafs()[1]->get_top_left_angle().GetY())
+        {
+            if(vh_floor->get_leafs()[1]->get_id()==3) color=CColor::BLUE;
+            if(vh_floor->get_leafs()[1]->get_id()==2) color=CColor::RED;
+            if(vh_floor->get_leafs()[1]->get_id()==5) color=CColor::GREEN;
+            if(vh_floor->get_leafs()[1]->get_id()==6) color=CColor::YELLOW;
+            }
+    }
+    if(vec_position_on_plane.GetX()<vh_floor->get_leafs()[2]->get_bottom_right_angle().GetX() && vec_position_on_plane.GetX()>vh_floor->get_leafs()[2]->get_top_left_angle().GetX())
+    {
+        if(vec_position_on_plane.GetY()<vh_floor->get_leafs()[2]->get_bottom_right_angle().GetY() && vec_position_on_plane.GetY()>vh_floor->get_leafs()[2]->get_top_left_angle().GetY())
+        {
+            if(vh_floor->get_leafs()[2]->get_id()==5) color=CColor::GREEN;
+            if(vh_floor->get_leafs()[2]->get_id()==2) color=CColor::RED;
+            if(vh_floor->get_leafs()[2]->get_id()==3) color=CColor::BLUE;
+            if(vh_floor->get_leafs()[2]->get_id()==6) color=CColor::YELLOW;
+            }
+    }
+    if(vec_position_on_plane.GetX()<vh_floor->get_leafs()[3]->get_bottom_right_angle().GetX() && vec_position_on_plane.GetX()>vh_floor->get_leafs()[3]->get_top_left_angle().GetX())
+    {
+        if(vec_position_on_plane.GetY()<vh_floor->get_leafs()[3]->get_bottom_right_angle().GetY() && vec_position_on_plane.GetY()>vh_floor->get_leafs()[3]->get_top_left_angle().GetY())
+        {
+            if(vh_floor->get_leafs()[3]->get_id()==6) color=CColor::YELLOW;
+            if(vh_floor->get_leafs()[3]->get_id()==3) color=CColor::BLUE;
+            if(vh_floor->get_leafs()[3]->get_id()==2) color=CColor::RED;
+            if(vh_floor->get_leafs()[3]->get_id()==5) color=CColor::GREEN;
+            }
     }
     return color;
 }

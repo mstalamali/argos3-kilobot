@@ -37,9 +37,9 @@ class Node
 
         ~Node();
                 
-        void set_parent(Node *Parent);
+        void set_parent(Node **Parent);
 
-        void add_child(Node *Child);
+        void add_child(Node **Child);
         
         void set_distance_from_opt(const int Distance);
 
