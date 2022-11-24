@@ -115,7 +115,7 @@ void CBestN_ALF::GetExperimentVariables(TConfigurationNode& t_tree){
 void CBestN_ALF::UpdateKilobotState(CKilobotEntity &c_kilobot_entity){
     UInt16 unKilobotID = GetKilobotId(c_kilobot_entity);
     m_vecKilobotPositions[unKilobotID] = GetKilobotPosition(c_kilobot_entity);
-    if(unKilobotID==0) std::cout<<m_vecKilobotPositions[unKilobotID]<<"\n";
+    // if(unKilobotID==0) std::cout<<m_vecKilobotPositions[unKilobotID]<<"\n";
 }
 
 /****************************************/
@@ -125,9 +125,9 @@ void CBestN_ALF::UpdateVirtualSensor(CKilobotEntity &c_kilobot_entity){
 
     /* Get the kilobot ID */
     UInt16 unKilobotID=GetKilobotId(c_kilobot_entity);
+    if (m_fTimeInSeconds - m_vecLastTimeMessaged[unKilobotID]< m_fMinTimeBetweenTwoMsg) return; // if the time is too short, the kilobot cannot receive a message
     if(!start_experiment)
     {
-        if (m_fTimeInSeconds - m_vecLastTimeMessaged[unKilobotID]< m_fMinTimeBetweenTwoMsg) return; // if the time is too short, the kilobot cannot receive a message
         for (int i = 0; i < 9; ++i) m_tMessages[unKilobotID].data[i]=0; // clear all the variables used for messaging
         /* Send init information for environment representation*/
         switch (m_vecStart_experiment[unKilobotID])
@@ -165,11 +165,11 @@ void CBestN_ALF::UpdateVirtualSensor(CKilobotEntity &c_kilobot_entity){
     }
     else
     {
-        if (m_fTimeInSeconds - m_vecLastTimeMessaged[unKilobotID]< m_fMinTimeBetweenTwoMsg*2) return; // if the time is too short, the kilobot cannot receive a message
         for (int i = 0; i < 9; ++i) m_tMessages[unKilobotID].data[i]=0; // clear all the variables used for messaging
         switch (m_vecGpsData[unKilobotID])
         {
             case 0:
+                if (m_fTimeInSeconds - m_vecLastTimeMessaged[unKilobotID]< m_fMinTimeBetweenTwoMsg*3) return; // if the time is too short, the kilobot cannot receive a message
                 m_vecLastTimeMessaged[unKilobotID]=m_fTimeInSeconds;
                 m_vecGpsData[unKilobotID]=1;
                 SendInformationGPS_A(c_kilobot_entity,1);
@@ -319,47 +319,50 @@ CColor CBestN_ALF::GetFloorColor(const CVector2 &vec_position_on_plane) {
     CColor color=CColor::WHITE;
     if(abs_distance(vec_position_on_plane,m_vecKilobotPositions[0])<0.03)
     {
-        color=CColor::WHITE;
+        color=CColor::BLACK;
     }
-    if(vec_position_on_plane.GetX()<vh_floor->get_leafs()[0]->get_bottom_right_angle().GetX() && vec_position_on_plane.GetX()>vh_floor->get_leafs()[0]->get_top_left_angle().GetX())
+    else
     {
-        if(vec_position_on_plane.GetY()<vh_floor->get_leafs()[0]->get_bottom_right_angle().GetY() && vec_position_on_plane.GetY()>vh_floor->get_leafs()[0]->get_top_left_angle().GetY())
+        if(vec_position_on_plane.GetX()<vh_floor->get_leafs()[0]->get_bottom_right_angle().GetX() && vec_position_on_plane.GetX()>vh_floor->get_leafs()[0]->get_top_left_angle().GetX())
         {
-            if(vh_floor->get_leafs()[0]->get_id()==2) color=CColor::RED;
-            if(vh_floor->get_leafs()[0]->get_id()==3) color=CColor::BLUE;
-            if(vh_floor->get_leafs()[0]->get_id()==5) color=CColor::GREEN;
-            if(vh_floor->get_leafs()[0]->get_id()==6) color=CColor::YELLOW;
+            if(vec_position_on_plane.GetY()<vh_floor->get_leafs()[0]->get_bottom_right_angle().GetY() && vec_position_on_plane.GetY()>vh_floor->get_leafs()[0]->get_top_left_angle().GetY())
+            {
+                if(vh_floor->get_leafs()[0]->get_id()==2) color=CColor::RED;
+                if(vh_floor->get_leafs()[0]->get_id()==3) color=CColor::BLUE;
+                if(vh_floor->get_leafs()[0]->get_id()==5) color=CColor::GREEN;
+                if(vh_floor->get_leafs()[0]->get_id()==6) color=CColor::YELLOW;
+            }
         }
-    }
-    if(vec_position_on_plane.GetX()<vh_floor->get_leafs()[1]->get_bottom_right_angle().GetX() && vec_position_on_plane.GetX()>vh_floor->get_leafs()[1]->get_top_left_angle().GetX())
-    {
-        if(vec_position_on_plane.GetY()<vh_floor->get_leafs()[1]->get_bottom_right_angle().GetY() && vec_position_on_plane.GetY()>vh_floor->get_leafs()[1]->get_top_left_angle().GetY())
+        if(vec_position_on_plane.GetX()<vh_floor->get_leafs()[1]->get_bottom_right_angle().GetX() && vec_position_on_plane.GetX()>vh_floor->get_leafs()[1]->get_top_left_angle().GetX())
         {
-            if(vh_floor->get_leafs()[1]->get_id()==3) color=CColor::BLUE;
-            if(vh_floor->get_leafs()[1]->get_id()==2) color=CColor::RED;
-            if(vh_floor->get_leafs()[1]->get_id()==5) color=CColor::GREEN;
-            if(vh_floor->get_leafs()[1]->get_id()==6) color=CColor::YELLOW;
-            }
-    }
-    if(vec_position_on_plane.GetX()<vh_floor->get_leafs()[2]->get_bottom_right_angle().GetX() && vec_position_on_plane.GetX()>vh_floor->get_leafs()[2]->get_top_left_angle().GetX())
-    {
-        if(vec_position_on_plane.GetY()<vh_floor->get_leafs()[2]->get_bottom_right_angle().GetY() && vec_position_on_plane.GetY()>vh_floor->get_leafs()[2]->get_top_left_angle().GetY())
+            if(vec_position_on_plane.GetY()<vh_floor->get_leafs()[1]->get_bottom_right_angle().GetY() && vec_position_on_plane.GetY()>vh_floor->get_leafs()[1]->get_top_left_angle().GetY())
+            {
+                if(vh_floor->get_leafs()[1]->get_id()==2) color=CColor::RED;
+                if(vh_floor->get_leafs()[1]->get_id()==3) color=CColor::BLUE;
+                if(vh_floor->get_leafs()[1]->get_id()==5) color=CColor::GREEN;
+                if(vh_floor->get_leafs()[1]->get_id()==6) color=CColor::YELLOW;
+                }
+        }
+        if(vec_position_on_plane.GetX()<vh_floor->get_leafs()[2]->get_bottom_right_angle().GetX() && vec_position_on_plane.GetX()>vh_floor->get_leafs()[2]->get_top_left_angle().GetX())
         {
-            if(vh_floor->get_leafs()[2]->get_id()==5) color=CColor::GREEN;
-            if(vh_floor->get_leafs()[2]->get_id()==2) color=CColor::RED;
-            if(vh_floor->get_leafs()[2]->get_id()==3) color=CColor::BLUE;
-            if(vh_floor->get_leafs()[2]->get_id()==6) color=CColor::YELLOW;
-            }
-    }
-    if(vec_position_on_plane.GetX()<vh_floor->get_leafs()[3]->get_bottom_right_angle().GetX() && vec_position_on_plane.GetX()>vh_floor->get_leafs()[3]->get_top_left_angle().GetX())
-    {
-        if(vec_position_on_plane.GetY()<vh_floor->get_leafs()[3]->get_bottom_right_angle().GetY() && vec_position_on_plane.GetY()>vh_floor->get_leafs()[3]->get_top_left_angle().GetY())
+            if(vec_position_on_plane.GetY()<vh_floor->get_leafs()[2]->get_bottom_right_angle().GetY() && vec_position_on_plane.GetY()>vh_floor->get_leafs()[2]->get_top_left_angle().GetY())
+            {
+                if(vh_floor->get_leafs()[2]->get_id()==2) color=CColor::RED;
+                if(vh_floor->get_leafs()[2]->get_id()==3) color=CColor::BLUE;
+                if(vh_floor->get_leafs()[2]->get_id()==5) color=CColor::GREEN;
+                if(vh_floor->get_leafs()[2]->get_id()==6) color=CColor::YELLOW;
+                }
+        }
+        if(vec_position_on_plane.GetX()<vh_floor->get_leafs()[3]->get_bottom_right_angle().GetX() && vec_position_on_plane.GetX()>vh_floor->get_leafs()[3]->get_top_left_angle().GetX())
         {
-            if(vh_floor->get_leafs()[3]->get_id()==6) color=CColor::YELLOW;
-            if(vh_floor->get_leafs()[3]->get_id()==3) color=CColor::BLUE;
-            if(vh_floor->get_leafs()[3]->get_id()==2) color=CColor::RED;
-            if(vh_floor->get_leafs()[3]->get_id()==5) color=CColor::GREEN;
-            }
+            if(vec_position_on_plane.GetY()<vh_floor->get_leafs()[3]->get_bottom_right_angle().GetY() && vec_position_on_plane.GetY()>vh_floor->get_leafs()[3]->get_top_left_angle().GetY())
+            {
+                if(vh_floor->get_leafs()[3]->get_id()==2) color=CColor::RED;
+                if(vh_floor->get_leafs()[3]->get_id()==3) color=CColor::BLUE;
+                if(vh_floor->get_leafs()[3]->get_id()==5) color=CColor::GREEN;
+                if(vh_floor->get_leafs()[3]->get_id()==6) color=CColor::YELLOW;
+                }
+        }
     }
     return color;
 }

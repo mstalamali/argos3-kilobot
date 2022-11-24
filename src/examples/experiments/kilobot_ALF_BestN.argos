@@ -111,7 +111,7 @@
         <distribute>
             <position method="uniform" min="-.25,-0.25,0" max="0.25,0.25,0" />
             <orientation method="uniform" min="0,0,0" max="360,0,0" />
-            <entity quantity="5" max_trials="200">
+            <entity quantity="15" max_trials="200">
                 <kilobot id="kb">
                     <controller config="bestN"/> <dynamics2d friction="0.7" />
                 </kilobot>
@@ -145,7 +145,9 @@
     <visualization>
         <qt-opengl>
             <camera>
-                <placement idx="0" position="0,0,1" look_at="0,0,0" lens_focal_length="20" />
+                <placements>
+                <placement index="0" position="0,0,1" up="-1,0,0" look_at="0,0,0" lens_focal_length="40" />
+                </placements>
             </camera>
         </qt-opengl>
     </visualization>

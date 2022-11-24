@@ -242,7 +242,7 @@ void ChierarchicFloor::adjust_vertices(Node **Start_node)
 {   
     (*Start_node)->set_vertices_offset(CVector2((*Start_node)->get_top_left_angle().GetX(),(*Start_node)->get_top_left_angle().GetY()),CVector2((*Start_node)->get_bottom_right_angle().GetX(),(*Start_node)->get_bottom_right_angle().GetY()));
     (*Start_node)->set_vertices(CVector2((*Start_node)->get_top_left_angle().GetX()-v_offset.x,(*Start_node)->get_top_left_angle().GetY()-v_offset.y),CVector2((*Start_node)->get_bottom_right_angle().GetX()-v_offset.x,(*Start_node)->get_bottom_right_angle().GetY()-v_offset.y));
-    printf("%d___%f_%f___%f_%f\n",(*Start_node)->id,(*Start_node)->get_top_left_angle().GetY(),(*Start_node)->get_top_left_angle().GetX(),(*Start_node)->get_bottom_right_angle().GetY(),(*Start_node)->get_bottom_right_angle().GetX());
+    // printf("%d___%f_%f___%f_%f\n",(*Start_node)->id,(*Start_node)->get_top_left_angle().GetY(),(*Start_node)->get_top_left_angle().GetX(),(*Start_node)->get_bottom_right_angle().GetY(),(*Start_node)->get_bottom_right_angle().GetX());
     if((*Start_node)->children.size()!=0)
     {
         for(long unsigned int i=0;i<branches;i++)
